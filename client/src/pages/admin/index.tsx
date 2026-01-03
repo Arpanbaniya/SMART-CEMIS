@@ -1,0 +1,645 @@
+// client/src/pages/admin/index.tsx
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { StatCard } from "@/components/stat-card";
+import { PageLoader } from "@/components/loading-spinner";
+import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarFooter,
+} from "@/components/ui/sidebar";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  Calendar,
+  Users,
+  BarChart3,
+  Settings,
+  Home,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  Check,
+  X,
+  Eye,
+  Search,
+  LogOut,
+  Plus,
+} from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { getInitials, formatDate, formatCurrency } from "@/lib/utils";
+import type { Event, AdminRequest, Payment } from "@shared/schema";
+
+// Add near imports
+type CategoryStat = { name: string; value: number };
+const CHART_COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+
+const sidebarItems = [
+  { title: "Dashboard", url: "/admin", icon: Home },
+  { title: "Events", url: "/admin/events", icon: Calendar },
+  { title: "Requests", url: "/admin/requests", icon: FileText },
+  { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+  { title: "Payments", url: "/admin/payments", icon: DollarSign },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
+];
+
+export default function AdminDashboard() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [location] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewingPaymentId, setPreviewingPaymentId] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const { toast } = useToast();
+
+  const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
+    queryKey: ["/api/events"],
+  });
+
+  const { data: requests = [] } = useQuery<AdminRequest[]>({
+    queryKey: ["/api/admin/requests"],
+  });
+
+  const { data: payments = [] } = useQuery<Payment[]>({
+    queryKey: ["/api/admin/payments"],
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      return apiRequest("POST", `/api/admin/payments/${paymentId}/resend`);
+    },
+    onSuccess: () => {
+      toast({ title: "Email Sent", description: "Payment email resent to user." });
+    },
+    onError: () => {
+      toast({ title: "Send Failed", description: "Could not resend email.", variant: "destructive" });
+    },
+  });
+
+  async function handlePreview(paymentId: string) {
+    try {
+      setPreviewHtml(null);
+      setPreviewingPaymentId(paymentId);
+      const response = await apiRequest("GET", `/api/admin/payments/${paymentId}/preview`);
+      setPreviewHtml(response);
+      setIsPreviewOpen(true);
+    } catch (error: any) {
+      toast({ title: "Preview failed", description: error.message || "Failed to load preview" });
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      window.location.href = "/";
+    }
+  };
+
+  if (authLoading) {
+    return <PageLoader />;
+  }
+
+  if (!isAuthenticated) {
+    window.location.href = "/login";
+    return null;
+  }
+
+  const getUserName = () => {
+    if (!user) return "Admin";
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.email || "Admin";
+  };
+
+  const totalParticipants = events.reduce((sum, e) => sum + (e.participantCount || 0), 0);
+  const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const pendingRequests = requests.filter((r) => r.status === "pending").length;
+
+  const sentimentData = [
+    { name: "Event A", positive: 65, neutral: 20, negative: 15 },
+    { name: "Event B", positive: 80, neutral: 15, negative: 5 },
+    { name: "Event C", positive: 45, neutral: 35, negative: 20 },
+    { name: "Event D", positive: 70, neutral: 22, negative: 8 },
+  ];
+
+  const trendData = [
+    { month: "Jan", score: 3.5 },
+    { month: "Feb", score: 3.8 },
+    { month: "Mar", score: 4.0 },
+    { month: "Apr", score: 3.9 },
+    { month: "May", score: 4.2 },
+    { month: "Jun", score: 4.5 },
+  ];
+
+  const categoryData = events.reduce((acc, event) => {
+    const existing = acc.find((item: { name: string; value: number }) => item.name === event.category);
+    if (existing) {
+      existing.value++;
+    } else {
+      acc.push({ name: event.category, value: 1 });
+    }
+    return acc;
+  }, [] as { name: string; value: number }[]);
+
+  const sidebarStyle = {
+    "--sidebar-width": "16rem",
+    "--sidebar-width-icon": "3rem",
+  };
+
+  return (
+    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <div className="flex h-screen w-full">
+        <Sidebar>
+          <SidebarHeader className="p-4">
+            <Link href="/" className="flex items-center gap-2">
+              <Calendar className="h-6 w-6 text-primary" />
+              <span className="font-display text-lg font-bold">EventHub</span>
+            </Link>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {sidebarItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild isActive={location === item.url}>
+                        <Link href={item.url} data-testid={`link-admin-${item.title.toLowerCase()}`}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter className="p-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarFallback>{getInitials(getUserName())}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 truncate">
+                <p className="text-sm font-medium truncate">{getUserName()}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              </div>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <header className="flex items-center justify-between gap-4 border-b px-6 py-4">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger data-testid="button-admin-sidebar-toggle" />
+              <h1 className="font-display text-2xl font-bold">Admin Dashboard</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="relative w-64 hidden md:block">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  data-testid="input-admin-search"
+                />
+              </div>
+              <ThemeToggle />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleLogout}
+                data-testid="button-admin-logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-auto p-6 space-y-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                title="Total Events"
+                value={events.length}
+                icon={Calendar}
+                change={12}
+                changeLabel="from last month"
+              />
+              <StatCard
+                title="Total Participants"
+                value={totalParticipants}
+                icon={Users}
+                change={8}
+                changeLabel="from last month"
+              />
+              <StatCard
+                title="Revenue"
+                value={formatCurrency(totalRevenue)}
+                icon={DollarSign}
+                change={23}
+                changeLabel="from last month"
+              />
+              <StatCard
+                title="Pending Requests"
+                value={pendingRequests}
+                icon={FileText}
+              />
+            </div>
+
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="overview" data-testid="tab-admin-overview">Overview</TabsTrigger>
+                <TabsTrigger value="analytics" data-testid="tab-admin-analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="events" data-testid="tab-admin-events">Events</TabsTrigger>
+                <TabsTrigger value="payments" data-testid="tab-admin-payments">Payments</TabsTrigger>
+                <TabsTrigger value="requests" data-testid="tab-admin-requests">Requests</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Sentiment Analysis</CardTitle>
+                      <CardDescription>Feedback sentiment per event</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={sentimentData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="name" className="text-xs" />
+                          <YAxis className="text-xs" />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "var(--radius)",
+                            }}
+                          />
+                          <Legend />
+                          <Bar dataKey="positive" fill="hsl(var(--chart-2))" name="Positive" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="neutral" fill="hsl(var(--chart-4))" name="Neutral" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="negative" fill="hsl(var(--chart-5))" name="Negative" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Sentiment Trend</CardTitle>
+                      <CardDescription>Average rating over time</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={trendData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="month" className="text-xs" />
+                          <YAxis domain={[0, 5]} className="text-xs" />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "var(--radius)",
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="score"
+                            stroke="hsl(var(--chart-1))"
+                            strokeWidth={2}
+                            dot={{ fill: "hsl(var(--chart-1))" }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Events by Category</CardTitle>
+                    <CardDescription>Distribution of events across categories</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {categoryData.map((_, index: number) => (
+                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "var(--radius)",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-500" />
+                        Engagement Metrics
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Average Registration Rate</span>
+                          <span className="font-bold">78%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Average Attendance Rate</span>
+                          <span className="font-bold">92%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Feedback Response Rate</span>
+                          <span className="font-bold">45%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Repeat Participant Rate</span>
+                          <span className="font-bold">34%</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Popular Events</CardTitle>
+                      <CardDescription>Top performing events by registration</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {events
+                          .sort((a, b) => (b.participantCount || 0) - (a.participantCount || 0))
+                          .slice(0, 5)
+                          .map((event, index) => (
+                            <div key={event.id} className="flex items-center gap-4">
+                              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                                {index + 1}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{event.title}</p>
+                                <p className="text-sm text-muted-foreground">{event.participantCount} participants</p>
+                              </div>
+                              <Badge variant="secondary">{event.category}</Badge>
+                            </div>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="events" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">All Events</h2>
+                  <Button asChild data-testid="button-create-event">
+                    <Link href="/admin/events/new">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Event
+                    </Link>
+                  </Button>
+                </div>
+                <Card>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="border-b bg-muted/50">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-sm font-semibold">Event</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold">Category</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold">Participants</th>
+                            <th className="px-6 py-4 text-right text-sm font-semibold">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {events.map((event) => (
+                            <tr key={event.id} className="border-b last:border-0">
+                              <td className="px-6 py-4">
+                                <p className="font-medium">{event.title}</p>
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge variant="secondary">{event.category}</Badge>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-muted-foreground">
+                                {formatDate(event.date)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge variant="outline">{event.status}</Badge>
+                              </td>
+                              <td className="px-6 py-4 text-sm">
+                                {event.participantCount} / {event.capacity}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <Button variant="ghost" size="icon">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="payments" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Payments</CardTitle>
+                    <CardDescription>Recent payment transactions</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {payments.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">No payments yet</div>
+                    ) : (
+                      <div className="overflow-hidden rounded-md border">
+                        <table className="w-full text-left">
+                          <thead className="bg-muted">
+                            <tr>
+                              <th className="px-6 py-3 text-sm">User</th>
+                              <th className="px-6 py-3 text-sm">Event</th>
+                              <th className="px-6 py-3 text-sm">Amount</th>
+                              <th className="px-6 py-3 text-sm">Status</th>
+                              <th className="px-6 py-3 text-sm">Txn</th>
+                              <th className="px-6 py-3 text-sm" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {payments.map((p) => (
+                              <tr key={p.id} className="border-t">
+                                <td className="px-6 py-4 text-sm">{p.userId}</td>
+                                <td className="px-6 py-4 text-sm">{p.eventId}</td>
+                                <td className="px-6 py-4 text-sm">{formatCurrency(p.amount || 0)}</td>
+                                <td className="px-6 py-4 text-sm">{p.status}</td>
+                                <td className="px-6 py-4 text-sm">{p.transactionId}</td>
+                                <td className="px-6 py-4 text-right">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="mr-2"
+                                    onClick={() => handlePreview(p.id)}
+                                  >
+                                    Preview
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => resendMutation.mutate(p.id)}
+                                  >
+                                    Resend Email
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="requests" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Admin Requests</CardTitle>
+                    <CardDescription>Pending requests for admin privileges</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {requests.filter((r) => r.status === "pending").length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                        <p>No pending requests</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {requests
+                          .filter((r) => r.status === "pending")
+                          .map((request) => (
+                            <div
+                              key={request.id}
+                              className="flex items-center justify-between p-4 rounded-lg border"
+                            >
+                              <div className="space-y-1">
+                                <p className="font-medium">User: {request.userId}</p>
+                                <p className="text-sm text-muted-foreground">{request.message}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline" className="text-green-600">
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-red-600">
+                                  <X className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </main>
+        </div>
+      </div>
+
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black opacity-50" onClick={() => setIsPreviewOpen(false)} />
+          <div className="relative bg-white rounded shadow-lg w-11/12 max-w-4xl max-h-[80vh] overflow-auto p-4 dark:bg-slate-950">
+            <div className="flex justify-between items-center mb-4 pb-4 border-b">
+              <h3 className="text-lg font-medium">Email Preview</h3>
+              <div>
+                <button
+                  className="mr-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  onClick={() => {
+                    if (previewingPaymentId) {
+                      resendMutation.mutate(previewingPaymentId);
+                      setIsPreviewOpen(false);
+                    }
+                  }}
+                >
+                  Send
+                </button>
+                <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300" onClick={() => setIsPreviewOpen(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="border rounded p-4 bg-white dark:bg-slate-900">
+              {previewHtml ? (
+                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              ) : (
+                <div className="text-center text-gray-500">Loading preview…</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </SidebarProvider>
+  );
+}
