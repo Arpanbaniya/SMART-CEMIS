@@ -7,8 +7,14 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import connectDB from './utils/db';
 import authRoutes from './routes/authRoutes';
+<<<<<<< HEAD
 import eventRoutes from './routes/eventRoutes'; // ← ADD THIS IMPORT
 import paymentRoutes from './routes/paymentRoutes';
+=======
+import eventRoutes from './routes/eventRoutes';
+import paymentRoutes from './routes/paymentRoutes';
+import adminRequestRoutes from './routes/adminRequestRoutes';
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 
 dotenv.config();
 
@@ -53,7 +59,12 @@ app.use(
 // Routes
 app.use('/', authRoutes);
 app.use('/', eventRoutes); 
+<<<<<<< HEAD
 app.use('/', paymentRoutes); // ← ADD THIS LINE
+=======
+app.use('/', paymentRoutes);
+app.use('/', adminRequestRoutes);
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 
 // Health check
 app.get('/api/health', (req, res) => {

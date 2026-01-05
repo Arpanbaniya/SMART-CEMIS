@@ -1,12 +1,25 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+<<<<<<< HEAD
 import { Header } from "@/components/header";
+=======
+import Header from "@/components/header";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import { Footer } from "@/components/footer";
 import { HeroSection } from "@/components/hero-section";
 import { EventGrid } from "@/components/event-grid";
 import { CategoryFilter } from "@/components/category-filter";
 import { Chatbot } from "@/components/chatbot";
 import { useWebSocket } from "@/hooks/use-websocket";
+<<<<<<< HEAD
+=======
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import type { Event } from "@shared/schema";
 
 export default function Home() {
@@ -17,6 +30,18 @@ export default function Home() {
 
   const { data: events = [], isLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+<<<<<<< HEAD
+=======
+    queryFn: async () => {
+      const response = await fetch("/api/events", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch events");
+      }
+      return response.json();
+    },
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   });
 
   const trendingEvents = [...events]
@@ -56,6 +81,7 @@ export default function Home() {
             />
           </section>
 
+<<<<<<< HEAD
           <EventGrid
             title="Trending Now"
             events={trendingEvents}
@@ -85,6 +111,58 @@ export default function Home() {
               emptyMessage="No events available"
             />
           )}
+=======
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            <AccordionItem value="trending" className="border rounded-lg px-6">
+              <AccordionTrigger className="text-2xl font-display font-bold hover:no-underline py-6">
+                Trending Now
+              </AccordionTrigger>
+              <AccordionContent>
+                <EventGrid
+                  events={trendingEvents}
+                  isLoading={isLoading}
+                  emptyMessage="No trending events yet"
+                />
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="upcoming" className="border rounded-lg px-6">
+              <AccordionTrigger className="text-2xl font-display font-bold hover:no-underline py-6">
+                Upcoming Events
+              </AccordionTrigger>
+              <AccordionContent>
+                <EventGrid
+                  events={upcomingEvents}
+                  isLoading={isLoading}
+                  emptyMessage="No upcoming events"
+                />
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="all" className="border rounded-lg px-6">
+              <AccordionTrigger className="text-2xl font-display font-bold hover:no-underline py-6">
+                {searchQuery || selectedCategory !== "all" 
+                  ? `${selectedCategory === "all" ? "All" : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Events`
+                  : "All Events"}
+              </AccordionTrigger>
+              <AccordionContent>
+                {searchQuery || selectedCategory !== "all" ? (
+                  <EventGrid
+                    events={filteredEvents}
+                    isLoading={isLoading}
+                    emptyMessage="No events match your criteria"
+                  />
+                ) : (
+                  <EventGrid
+                    events={events}
+                    isLoading={isLoading}
+                    emptyMessage="No events available"
+                  />
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
         </div>
       </main>
 

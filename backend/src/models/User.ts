@@ -6,6 +6,10 @@ export interface IUser {
   password?: string;
   firstName: string | null;
   lastName: string | null;
+<<<<<<< HEAD
+=======
+  gender?: 'male' | 'female' | 'other';
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   role: 'user' | 'student_admin' | 'super_admin';
   preference: 'physical' | 'innovative' | 'both';
   profileImageUrl?: string | null;
@@ -18,6 +22,14 @@ const userSchema = new Schema<IUser>({
   password: { type: String }, // optional for OAuth later
   firstName: { type: String, default: null },
   lastName: { type: String, default: null },
+<<<<<<< HEAD
+=======
+  gender: { 
+    type: String, 
+    enum: ['male', 'female', 'other'],
+    default: null
+  },
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   role: { 
     type: String, 
     enum: ['user', 'student_admin', 'super_admin'], 

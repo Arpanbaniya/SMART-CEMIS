@@ -4,7 +4,18 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+<<<<<<< HEAD
 import { UserPlus, Mail, Lock, User, AlertCircle, Sparkles, Activity } from "lucide-react";
+=======
+import { UserPlus, Mail, Lock, User, AlertCircle, Sparkles, Activity, Users } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -14,6 +25,10 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+<<<<<<< HEAD
+=======
+  const [gender, setGender] = useState<"male" | "female" | "other" | "">("");
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   const [interest, setInterest] = useState<"physical" | "innovative">("innovative");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +47,11 @@ export default function RegisterPage() {
     setError("");
 
     // Client-side validation first
+<<<<<<< HEAD
     if (!name || !email || !password || !confirmPassword) {
+=======
+    if (!name || !email || !password || !confirmPassword || !gender) {
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
       setError("All fields are required");
       return;
     }
@@ -55,6 +74,10 @@ export default function RegisterPage() {
         name,
         email,
         password,
+<<<<<<< HEAD
+=======
+        gender,
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
         preference: interest,
       });
 
@@ -149,6 +172,26 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
+<<<<<<< HEAD
+=======
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Gender
+                </label>
+                <Select value={gender} onValueChange={(value) => setGender(value as "male" | "female" | "other")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select your gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
                 <label className="text-sm font-medium">Your Preference</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button

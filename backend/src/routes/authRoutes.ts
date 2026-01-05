@@ -81,10 +81,17 @@ router.post('/api/auth/login', async (req, res) => {
 // └──────────────────────────────┘
 router.post('/api/auth/register', async (req, res) => {
   try {
+<<<<<<< HEAD
     const { name, email, password, preference } = req.body;
 
     // Basic validation
     if (!name || !email || !password) {
+=======
+    const { name, email, password, gender, preference } = req.body;
+
+    // Basic validation
+    if (!name || !email || !password || !gender) {
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -108,6 +115,10 @@ router.post('/api/auth/register', async (req, res) => {
       password: hashedPassword,
       firstName,
       lastName,
+<<<<<<< HEAD
+=======
+      gender: gender || null,
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
       role: 'user',
       preference: preference || 'both',
       profileImageUrl: null

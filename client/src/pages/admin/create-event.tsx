@@ -4,7 +4,11 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+<<<<<<< HEAD
 import { Header } from "@/components/header";
+=======
+import Header from "@/components/header";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,7 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+<<<<<<< HEAD
 import { ArrowLeft, Calendar, MapPin, Clock, Users, DollarSign, Trophy } from "lucide-react";
+=======
+import { ArrowLeft, Calendar, MapPin, Clock, Users, DollarSign, Trophy, Image } from "lucide-react";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -40,6 +48,10 @@ const createEventSchema = z.object({
   date: z.string().min(1, "Please select a date"),
   time: z.string().min(1, "Please enter a time"),
   location: z.string().min(3, "Location must be at least 3 characters"),
+<<<<<<< HEAD
+=======
+  imageUrl: z.string().url().optional().or(z.literal("")),
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   mapUrl: z.string().url().optional().or(z.literal("")),
   capacity: z.number().min(1, "Capacity must be at least 1"),
   isPaid: z.boolean().optional(), // ← changed from .default(false)
@@ -64,6 +76,10 @@ export default function CreateEventPage() {
       date: "",
       time: "",
       location: "",
+<<<<<<< HEAD
+=======
+      imageUrl: "",
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
       mapUrl: "",
       capacity: 100,
       isPaid: false,
@@ -100,6 +116,40 @@ export default function CreateEventPage() {
   });
 
   const onSubmit = (data: CreateEventForm) => {
+<<<<<<< HEAD
+=======
+    // Validate that date and time are not in the past
+    const selectedDate = new Date(data.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < today) {
+      toast({
+        title: "Invalid Date",
+        description: "You cannot select a past date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If date is today, validate time
+    if (selectedDate.getTime() === today.getTime()) {
+      const [hours, minutes] = data.time.split(':').map(Number);
+      const selectedDateTime = new Date();
+      selectedDateTime.setHours(hours, minutes, 0, 0);
+      const now = new Date();
+      
+      if (selectedDateTime < now) {
+        toast({
+          title: "Invalid Time",
+          description: "You cannot select a time that has already passed for today.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
     createMutation.mutate(data);
   };
 
@@ -198,6 +248,7 @@ export default function CreateEventPage() {
                       <FormField
                         control={form.control}
                         name="date"
+<<<<<<< HEAD
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
@@ -210,6 +261,30 @@ export default function CreateEventPage() {
                             <FormMessage />
                           </FormItem>
                         )}
+=======
+                        render={({ field }) => {
+                          // Get today's date in YYYY-MM-DD format
+                          const today = new Date().toISOString().split('T')[0];
+                          
+                          return (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                Date
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="date" 
+                                  {...field} 
+                                  min={today}
+                                  data-testid="input-event-date" 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
                       />
 
                       <FormField
@@ -249,6 +324,33 @@ export default function CreateEventPage() {
 
                     <FormField
                       control={form.control}
+<<<<<<< HEAD
+=======
+                      name="imageUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Image className="h-4 w-4" />
+                            Event Image URL (Optional)
+                          </FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://example.com/image.png or any image URL" 
+                              {...field} 
+                              data-testid="input-event-image" 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Enter an image URL (.png, .jpg, .jpeg, or any image link)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
                       name="mapUrl"
                       render={({ field }) => (
                         <FormItem>

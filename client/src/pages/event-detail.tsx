@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+<<<<<<< HEAD
 import { Header } from "@/components/header";
+=======
+import Header from "@/components/header";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import { Footer } from "@/components/footer";
 import { StarRating } from "@/components/star-rating";
 import { PageLoader } from "@/components/loading-spinner";
@@ -53,16 +57,56 @@ export default function EventDetailPage() {
 
   const { data: event, isLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
+<<<<<<< HEAD
+=======
+    queryFn: async () => {
+      if (!eventId) return null;
+      const response = await fetch(`/api/events/${eventId}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch event");
+      }
+      return response.json();
+    },
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
     enabled: !!eventId,
   });
 
   const { data: feedbacks = [] } = useQuery<Feedback[]>({
     queryKey: ["/api/events", eventId, "feedback"],
+<<<<<<< HEAD
+=======
+    queryFn: async () => {
+      if (!eventId) return [];
+      const response = await fetch(`/api/events/${eventId}/feedback`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch feedback");
+      }
+      return response.json();
+    },
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
     enabled: !!eventId,
   });
 
   const { data: registration } = useQuery<Registration | null>({
     queryKey: ["/api/registrations", eventId, user?.id],
+<<<<<<< HEAD
+=======
+    queryFn: async () => {
+      if (!eventId || !user?.id) return null;
+      const response = await fetch(`/api/registrations/${eventId}/${user?.id}`, {
+        credentials: "include",
+      });
+      if (response.status === 404) return null;
+      if (!response.ok) {
+        throw new Error("Failed to fetch registration");
+      }
+      return response.json();
+    },
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
     enabled: !!eventId && !!user?.id,
   });
 
@@ -408,7 +452,11 @@ export default function EventDetailPage() {
                       <CheckCircle className="h-5 w-5" />
                       <span className="font-medium">You're registered!</span>
                     </div>
+<<<<<<< HEAD
                   ) : (
+=======
+                  ) : user?.role !== 'super_admin' ? (
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
                     <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
                       <Button
                         className="w-full"
@@ -453,6 +501,13 @@ export default function EventDetailPage() {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+<<<<<<< HEAD
+=======
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p>Super admins cannot register for events</p>
+                    </div>
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
                   )}
 
                   <div className="flex gap-2">

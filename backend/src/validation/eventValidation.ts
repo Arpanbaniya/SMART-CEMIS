@@ -9,6 +9,10 @@ export const createEventSchema = z.object({
   date: z.string().min(1, 'Date is required'), // ✅ Fix: frontend sends date string like "2024-12-31"
   time: z.string().min(1, 'Time is required'),
   location: z.string().min(1, 'Location is required'),
+<<<<<<< HEAD
+=======
+  imageUrl: z.string().url().optional().or(z.literal('')), // ✅ Add image URL field
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   mapUrl: z.string().url().optional().or(z.literal('')), // ✅ Add missing field
   capacity: z.number().int().min(1).default(100),
   isPaid: z.boolean().default(false),

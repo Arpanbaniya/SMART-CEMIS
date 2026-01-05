@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+<<<<<<< HEAD
 import { Header } from "@/components/header";
+=======
+import Header from "@/components/header";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import { Footer } from "@/components/footer";
 import { PageLoader } from "@/components/loading-spinner";
 import { Chatbot } from "@/components/chatbot";

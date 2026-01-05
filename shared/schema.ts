@@ -22,6 +22,10 @@ export interface User {
   email: string;
   firstName: string | null;
   lastName: string | null;
+<<<<<<< HEAD
+=======
+  gender?: 'male' | 'female' | 'other';
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   role: UserRole;
   preference: UserPreference;
   profileImageUrl?: string | null;
@@ -55,9 +59,17 @@ export interface AdminRequest {
   eventId?: string;
   status: 'pending' | 'approved' | 'rejected';
   message: string;
+<<<<<<< HEAD
   reviewedBy?: string;
   reviewedAt?: string;
   createdAt: string;
+=======
+  eventDescription?: string; // Description of the event they want to create
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 }
 
 export interface Payment {

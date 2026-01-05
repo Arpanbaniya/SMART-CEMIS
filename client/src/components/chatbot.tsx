@@ -91,7 +91,11 @@ export function Chatbot() {
   return (
     <>
       <Button
+<<<<<<< HEAD
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+=======
+        className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-lg z-50"
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
         size="icon"
         onClick={() => setIsOpen(!isOpen)}
         data-testid="button-chatbot-toggle"
@@ -104,7 +108,11 @@ export function Chatbot() {
       </Button>
 
       {isOpen && (
+<<<<<<< HEAD
         <Card className="fixed bottom-24 right-6 w-80 md:w-96 shadow-xl z-50 flex flex-col max-h-[500px]" data-testid="card-chatbot">
+=======
+        <Card className="fixed bottom-24 right-4 w-80 md:w-96 shadow-xl z-50 flex flex-col max-h-[500px]" data-testid="card-chatbot">
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
           <CardHeader className="border-b py-4">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Bot className="h-5 w-5 text-primary" />

@@ -34,12 +34,27 @@ export function useAuth() {
     queryFn: fetchUser,
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
+<<<<<<< HEAD
+=======
+    // Don't show 401 errors as they're expected for unauthenticated users
+    throwOnError: (error) => {
+      // Only throw errors that aren't 401 (unauthorized)
+      if (error.message.includes('401')) {
+        return false;
+      }
+      return true;
+    },
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   });
 
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
+<<<<<<< HEAD
     error,
+=======
+    error: error?.message.includes('401') ? null : error,
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   };
 }

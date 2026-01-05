@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+<<<<<<< HEAD
 import { Header } from "@/components/header";
+=======
+import { Link } from "wouter";
+import Header from "@/components/header";
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
 import { Footer } from "@/components/footer";
 import { EventGrid } from "@/components/event-grid";
 import { CategoryFilter } from "@/components/category-filter";
@@ -23,8 +28,70 @@ export default function EventsPage() {
   const [sortBy, setSortBy] = useState("date");
   const [statusFilter, setStatusFilter] = useState("all");
 
+<<<<<<< HEAD
   const { data: events = [], isLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+=======
+  const { data: events = [], isLoading, error } = useQuery<Event[]>({
+    queryKey: ["/api/events"],
+    queryFn: async () => {
+      console.log("🔍 Events page - Fetching events...");
+      try {
+        const response = await fetch("/api/events", {
+          credentials: "include",
+        });
+        console.log("🔍 Events page - Response status:", response.status);
+        console.log("🔍 Events page - Response headers:", response.headers);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.log("🔍 Events page - Error response:", errorText);
+          
+          // If API fails for unauthenticated users, return mock data for testing
+          if (response.status === 401) {
+            console.log("🔍 Events page - Returning mock events for unauthenticated users");
+            return [
+              {
+                id: 1,
+                title: "Sample Event 1",
+                description: "This is a sample event for testing",
+                category: "technology",
+                date: new Date().toISOString(),
+                location: "Campus Auditorium",
+                maxParticipants: 100,
+                participantCount: 45,
+                status: "upcoming",
+                imageUrl: null
+              },
+              {
+                id: 2,
+                title: "Sample Event 2",
+                description: "Another sample event for testing",
+                category: "cultural",
+                date: new Date(Date.now() + 86400000).toISOString(),
+                location: "Student Center",
+                maxParticipants: 50,
+                participantCount: 30,
+                status: "upcoming",
+                imageUrl: null
+              }
+            ];
+          }
+          
+          throw new Error(`Failed to fetch events: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log("🔍 Events page - Events data:", data);
+        console.log("🔍 Events page - Events count:", data?.length || 0);
+        return data;
+      } catch (err) {
+        console.log("🔍 Events page - Fetch error:", err);
+        throw err;
+      }
+    },
+    retry: 1, // Allow one retry for network issues
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
   });
 
   const filteredEvents = events
@@ -119,6 +186,49 @@ export default function EventsPage() {
             Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
           </div>
 
+<<<<<<< HEAD
+=======
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted border-t-primary"></div>
+              <span className="ml-2 text-muted-foreground">Loading events...</span>
+            </div>
+          )}
+
+          {!isLoading && !error && events.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="rounded-full bg-muted p-6 mb-4">
+                <Calendar className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium">No events found</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                No events are currently available. Check back later or sign in to see more events!
+              </p>
+              <Button className="mt-4" asChild>
+                <Link href="/login">Sign In to See More</Link>
+              </Button>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Calendar className="h-5 w-5 text-red-400" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Error loading events
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{error.message}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+>>>>>>> 21fa3bf (added admin access,student admin privilege and CRUD operations)
           <EventGrid
             events={filteredEvents}
             isLoading={isLoading}
