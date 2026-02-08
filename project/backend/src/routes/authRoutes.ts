@@ -1,14 +1,68 @@
+<<<<<<< HEAD
 // backend/src/routes/authRoutes.ts
 import { Router } from 'express';
 import { User } from '../models/User';
 import { requireAuth } from '../middleware/requireAuth';
 import '../types/session';
 import bcrypt from 'bcrypt';
+=======
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                    AUTHENTICATION API ROUTES                               ║
+ * ║                      Used in Frontend & Backend                             ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ This file contains all authentication-related API endpoints that handle:   ║
+ * ║  1. User login (POST /api/auth/login)                                    ║
+ * ║  2. User registration (POST /api/auth/register)                          ║
+ * ║  3. Email verification (POST /api/auth/verify-email)                     ║
+ * ║  4. Resend verification (POST /api/auth/resend-verification)             ║
+ * ║  5. Get current user (GET /api/auth/user)                                ║
+ * ║  6. Event creation permission (GET /api/auth/event-creation-permission)  ║
+ * ║  7. Logout (POST /api/auth/logout)                                       ║
+ * ║                                                                            ║
+ * ║ FRONTEND CONSUMER: client/src/pages/login.tsx, register.tsx, verify.tsx ║
+ * ║ FRONTEND HOOKS: client/src/hooks/use-auth.ts                             ║
+ * ║ FRONTEND UTILS: client/src/lib/auth-utils.ts                             ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+// backend/src/routes/authRoutes.ts
+import bcrypt from 'bcrypt';
+import { Router } from 'express';
+import { requireAuth } from '../middleware/requireAuth';
+import { User } from '../models/User';
+import '../types/session';
+>>>>>>> 6fc2a7b (google maps, google calender added)
 import { generateVerificationToken, hashToken } from '../utils/generateToken';
 import { sendVerificationEmail } from '../utils/sendgrid';
 
 const router = Router();
 
+<<<<<<< HEAD
+=======
+/**
+ * POST /api/auth/login
+ * 
+ * FRONTEND USAGE: client/src/pages/login.tsx (line 31)
+ * Authenticates user with email and password
+ * 
+ * REQUEST BODY:
+ *   - email: string (user email)
+ *   - password: string (plain text password)
+ * 
+ * RESPONSE (200 OK):
+ *   - user: { id, email, firstName, lastName, role, preference, isVerified, ... }
+ * 
+ * RESPONSE (400):
+ *   - error: 'LOGIN_VALIDATION_FAILED' - missing email or password
+ * 
+ * RESPONSE (401):
+ *   - error: 'USER_NOT_FOUND' - no account with provided email
+ *   - error: 'INVALID_PASSWORD' - incorrect password
+ * 
+ * RESPONSE (403):
+ *   - error: 'EMAIL_NOT_VERIFIED' - user must verify email first
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // ┌──────────────────────────────┐
 // │         LOGIN ROUTE          │
 // └──────────────────────────────┘

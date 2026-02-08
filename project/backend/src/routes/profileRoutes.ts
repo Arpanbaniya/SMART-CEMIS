@@ -1,3 +1,22 @@
+<<<<<<< HEAD
+=======
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                       USER PROFILE API ROUTES                               ║
+ * ║                       Used in Frontend & Backend                            ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ This file handles user profile operations:                                 ║
+ * ║  1. GET /api/profile - Get current user's profile                          ║
+ * ║  2. PATCH /api/profile - Update user's profile information                 ║
+ * ║                                                                            ║
+ * ║ FRONTEND USAGE: client/src/pages/profile.tsx                              ║
+ * ║   - Fetch profile (line 58)                                               ║
+ * ║   - Update profile (line 86)                                              ║
+ * ║                                                                            ║
+ * ║ FRONTEND HOOKS: use-auth.ts checks user profile on app load                ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // backend/src/routes/profileRoutes.ts
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
@@ -5,6 +24,23 @@ import { User } from '../models/User';
 
 const router = Router();
 
+<<<<<<< HEAD
+=======
+/**
+ * GET /api/profile
+ * 
+ * FRONTEND USAGE: client/src/pages/profile.tsx (line 58)
+ * Retrieves current authenticated user's profile information
+ * 
+ * RESPONSE (200 OK):
+ *   - Profile object: { id, email, firstName, lastName, role, preference, 
+ *                       gender, semester, rollNo, programme, profileImageUrl,
+ *                       createdAt, updatedAt }
+ * 
+ * RESPONSE (404):
+ *   - error: 'User not found'
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // GET / - Get current user profile
 router.get('/', requireAuth, async (req, res) => {
   try {

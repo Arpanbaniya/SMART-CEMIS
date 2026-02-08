@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Feedback } from '../models/Feedback';
@@ -5,6 +6,33 @@ import { Event } from '../models/Event';
 import { Registration } from '../models/Registration';
 import { User } from '../models/User';
 import { analyzeSentiment } from '../services/sentimentService';
+=======
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                      EVENT FEEDBACK API ROUTES                              ║
+ * ║                       Used in Frontend & Backend                            ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ This file handles event feedback and sentiment analysis:                   ║
+ * ║  1. GET /api/events/feedback/:eventId - Get all feedback                  ║
+ * ║  2. POST /api/events/feedback/:eventId - Post new feedback                ║
+ * ║  3. GET /api/events/:eventId/sentiment - Get sentiment analysis           ║
+ * ║  4. DELETE /api/events/feedback/:feedbackId - Delete feedback (admin)     ║
+ * ║                                                                            ║
+ * ║ FRONTEND USAGE: client/src/pages/event-detail.tsx                         ║
+ * ║   - Fetch feedback (line 209)                                             ║
+ * ║   - Post feedback (line 313)                                              ║
+ * ║   - View sentiment analysis (interactive-rating component)                ║
+ * ║                                                                            ║
+ * ║ WEBSOCKET UPDATES: use-websocket.ts (real-time feedback updates)          ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+import { Router } from 'express';
+import { requireAuth } from '../middleware/requireAuth';
+import { Event } from '../models/Event';
+import { Feedback } from '../models/Feedback';
+import { Registration } from '../models/Registration';
+import { User } from '../models/User';
+>>>>>>> 6fc2a7b (google maps, google calender added)
 import { broadcastEventUpdate } from '../server';
 
 const router = Router();

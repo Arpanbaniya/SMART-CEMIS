@@ -1,10 +1,37 @@
+<<<<<<< HEAD
+=======
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                       EVENT MANAGEMENT API ROUTES                           ║
+ * ║                        Used in Frontend & Backend                            ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ This file contains event-related API endpoints:                            ║
+ * ║  1. GET /api/events - List all events (with filters)                      ║
+ * ║  2. POST /api/events - Create new event (super_admin/student_admin)       ║
+ * ║  3. GET /api/events/:id - Get single event details                        ║
+ * ║  4. PATCH /api/events/:id - Update event (admin only)                    ║
+ * ║  5. DELETE /api/events/:id - Delete event (admin only)                   ║
+ * ║  6. GET /api/events/:eventId/participants - List event participants       ║
+ * ║  7. GET /api/events/:eventId/registrations - Get registration details      ║
+ * ║                                                                            ║
+ * ║ FRONTEND CONSUMER: client/src/pages/events.tsx, event-detail.tsx         ║
+ * ║ FRONTEND COMPONENTS: event-grid.tsx, event-card.tsx, admin-event-*.tsx   ║
+ * ║ FRONTEND HOOKS: use-websocket.ts (real-time updates)                      ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // backend/src/routes/eventRoutes.ts - Fixed student admin event creation limits and TypeScript errors
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Event } from '../models/Event';
 import { User } from '../models/User';
+<<<<<<< HEAD
 import { createEventSchema } from '../validation/eventValidation';
 import { logEventCreation, logEventUpdate, logEventDeletion, extractRequestMetadata } from '../utils/logger';
+=======
+import { extractRequestMetadata, logEventCreation, logEventDeletion, logEventUpdate } from '../utils/logger';
+import { createEventSchema } from '../validation/eventValidation';
+>>>>>>> 6fc2a7b (google maps, google calender added)
 
 // Extend Express Request interface with all required properties
 interface ExtendedRequest extends Express.Request {
@@ -18,6 +45,15 @@ interface ExtendedRequest extends Express.Request {
 
 const router = Router();
 
+<<<<<<< HEAD
+=======
+/**
+ * MIDDLEWARE: canModifyEvent
+ * Validates that user is either:
+ *   - Super admin (can modify any event)
+ *   - Student admin (can only modify their own events)
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // Middleware to check if user can modify event (super_admin or student_admin who created it)
 const canModifyEvent = async (req: ExtendedRequest, res: any, next: any) => {
   try {

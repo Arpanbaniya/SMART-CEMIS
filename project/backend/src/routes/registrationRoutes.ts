@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // backend/src/routes/registrationRoutes.ts
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
@@ -5,6 +6,34 @@ import { Registration } from '../models/Registration';
 import { Event } from '../models/Event';
 import { User } from '../models/User';
 import { Team } from '../models/Team';
+=======
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                    EVENT REGISTRATION API ROUTES                            ║
+ * ║                       Used in Frontend & Backend                            ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ This file handles event registration operations:                           ║
+ * ║  1. POST /api/events/:eventId/register - Register for an event            ║
+ * ║  2. GET /api/events/:eventId/check-registration - Check if user registered║
+ * ║  3. DELETE /api/events/:eventId/unregister - Unregister from event        ║
+ * ║  4. GET /api/users/:userId/registrations - Get user's registrations       ║
+ * ║                                                                            ║
+ * ║ FRONTEND USAGE: client/src/pages/event-detail.tsx                         ║
+ * ║   - Register for event (line 1104)                                        ║
+ * ║   - Check registration status (line 18 in use-registration-status.ts)    ║
+ * ║   - Unregister from event (line 370)                                      ║
+ * ║                                                                            ║
+ * ║ RELATED HOOKS: use-registration-status.ts (checks if user registered)     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+// backend/src/routes/registrationRoutes.ts
+import { Request, Response, Router } from 'express';
+import { requireAuth } from '../middleware/requireAuth';
+import { Event } from '../models/Event';
+import { Registration } from '../models/Registration';
+import { Team } from '../models/Team';
+import { User } from '../models/User';
+>>>>>>> 6fc2a7b (google maps, google calender added)
 
 // Import broadcast function
 declare global {
@@ -29,6 +58,24 @@ router.use((req, res, next) => {
   next();
 });
 
+<<<<<<< HEAD
+=======
+/**
+ * GET /api/users/:userId/registrations
+ * 
+ * FRONTEND USAGE: Get all events a user has registered for
+ * Returns user's registration list with event details
+ * 
+ * PARAMETERS:
+ *   - userId: string (path param)
+ * 
+ * RESPONSE (200 OK):
+ *   - Array of registration objects with populated event details
+ * 
+ * RESPONSE (403):
+ *   - error: 'Forbidden: Can only view your own registrations'
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // GET /:userId/registrations - Get user's registrations
 router.get('/:userId/registrations', requireAuth, async (req: Request, res: Response) => {
   try {

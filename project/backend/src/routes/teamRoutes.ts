@@ -1,9 +1,38 @@
+<<<<<<< HEAD
 // backend/src/routes/teamRoutes.ts
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Team } from '../models/Team';
 import { Event } from '../models/Event';
 import { Registration } from '../models/Registration';
+=======
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                        EVENT TEAMS API ROUTES                               ║
+ * ║                       Used in Frontend & Backend                            ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ This file handles team-based event operations:                             ║
+ * ║  1. GET /api/events/:eventId/teams - Get all teams in an event            ║
+ * ║  2. GET /api/events/:eventId/teams/:teamName - Get specific team          ║
+ * ║  3. POST /api/events/:eventId/teams - Create new team                    ║
+ * ║  4. PUT /api/events/:eventId/teams/:teamName/join - Join a team          ║
+ * ║  5. DELETE /api/events/:eventId/teams/:teamName/leave - Leave team       ║
+ * ║  6. DELETE /api/events/:eventId/teams/:teamName - Delete team (admin)    ║
+ * ║                                                                            ║
+ * ║ FRONTEND USAGE: client/src/pages/event-detail.tsx                         ║
+ * ║   - Fetch teams (line 258)                                                ║
+ * ║   - Join/Create teams (event registration form)                           ║
+ * ║                                                                            ║
+ * ║ WEBSOCKET UPDATES: use-websocket.ts (real-time team updates)              ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+// backend/src/routes/teamRoutes.ts
+import { Request, Response, Router } from 'express';
+import { requireAuth } from '../middleware/requireAuth';
+import { Event } from '../models/Event';
+import { Registration } from '../models/Registration';
+import { Team } from '../models/Team';
+>>>>>>> 6fc2a7b (google maps, google calender added)
 import { User } from '../models/User';
 
 const router = Router();
@@ -13,6 +42,27 @@ interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * GET /api/events/:eventId/teams
+ * 
+ * FRONTEND USAGE: client/src/pages/event-detail.tsx (line 258)
+ * Retrieves all teams participating in an event with member details
+ * 
+ * PARAMETERS:
+ *   - eventId: string (path param)
+ * 
+ * RESPONSE (200 OK):
+ *   - Array of team objects with:
+ *     - name, description, teamSize, capacity
+ *     - members: array of registration objects with user details
+ *     - memberCount: current number of members
+ * 
+ * RESPONSE (404):
+ *   - error: 'Event not found'
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // GET /:eventId/teams - Get all teams for an event
 router.get('/:eventId/teams', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {

@@ -1,12 +1,58 @@
+<<<<<<< HEAD
+=======
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                      EVENT COMMENTS API ROUTES                              ║
+ * ║                       Used in Frontend & Backend                            ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║ This file handles event comment operations:                                ║
+ * ║  1. GET /api/events/:eventId/comments - Get all event comments            ║
+ * ║  2. GET /api/events/:eventId/user-comments - Get user's comments on event ║
+ * ║  3. POST /api/events/:eventId/comments - Post new comment on event        ║
+ * ║  4. DELETE /api/events/:eventId/comments/:commentId - Delete comment      ║
+ * ║                                                                            ║
+ * ║ FRONTEND USAGE: client/src/pages/event-detail.tsx                         ║
+ * ║   - Fetch comments (line 225)                                             ║
+ * ║   - Get user's comments (line 242)                                        ║
+ * ║   - Post comment (implied from form)                                      ║
+ * ║                                                                            ║
+ * ║ RELATED COMPONENTS: comment-form.tsx, comment-item.tsx, CommentItem.tsx   ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Comment } from '../models/Comment';
 import { Event } from '../models/Event';
+<<<<<<< HEAD
 import { User } from '../models/User';
 import { Registration } from '../models/Registration';
 
 const router = Router();
 
+=======
+import { Registration } from '../models/Registration';
+import { User } from '../models/User';
+
+const router = Router();
+
+/**
+ * GET /api/events/:eventId/comments
+ * 
+ * FRONTEND USAGE: client/src/pages/event-detail.tsx (line 225)
+ * Fetches all comments for an event, public endpoint
+ * 
+ * PARAMETERS:
+ *   - eventId: string (path param)
+ * 
+ * RESPONSE (200 OK):
+ *   - Array of comments with user details (firstName, lastName, email)
+ *   - Sorted by most recent first
+ * 
+ * RESPONSE (404):
+ *   - error: 'Event not found'
+ */
+>>>>>>> 6fc2a7b (google maps, google calender added)
 // GET /:eventId/comments - Get all comments for an event
 router.get('/:eventId/comments', async (req, res) => {
   try {
