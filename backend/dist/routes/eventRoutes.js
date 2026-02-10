@@ -40,6 +40,8 @@ const Event_1 = require("../models/Event");
 const User_1 = require("../models/User");
 const eventValidation_1 = require("../validation/eventValidation");
 const logger_1 = require("../utils/logger");
+const trendingService_1 = require("../services/trendingService");
+const eventStatus_1 = require("../utils/eventStatus");
 const router = (0, express_1.Router)();
 // Middleware to check if user can modify event (super_admin or student_admin who created it)
 const canModifyEvent = async (req, res, next) => {
@@ -123,7 +125,9 @@ router.post('/', requireAuth_1.requireAuth, async (req, res) => {
         }
         // Validate input first
         const data = eventValidation_1.createEventSchema.parse(req.body);
-        const eventDate = new Date(data.date);
+        // Parse dates and times from frontend
+        const eventDate = new Date(data.date); // Convert date ISO string to Date
+        const eventEndDate = new Date(data.endDate); // Convert endDate ISO string to Date
         const duplicateEvent = await Event_1.Event.findOne({
             title: data.title,
             description: data.description,
@@ -143,6 +147,7 @@ router.post('/', requireAuth_1.requireAuth, async (req, res) => {
         const eventData = {
             ...data,
             date: eventDate, // Convert date string to Date object
+            endDate: eventEndDate, // Convert endDate string to Date object
             createdById: req.session.userId,
             status: 'upcoming',
             participantCount: 0,
@@ -232,8 +237,20 @@ router.post('/', requireAuth_1.requireAuth, async (req, res) => {
         catch (logError) {
             console.error('Error logging event creation:', logError);
         }
-        // toJSON() will include the virtual 'id' field
-        res.status(201).json(newEvent.toJSON());
+        // Return created event with computed status
+        const json = newEvent.toJSON();
+        const computedStatus = (0, eventStatus_1.computeEventStatus)({
+            isCancelled: json.isCancelled || false,
+            archivedAt: json.archivedAt || null,
+            date: new Date(json.date),
+            time: json.time,
+            endDate: new Date(json.endDate),
+            endTime: json.endTime,
+        });
+        res.status(201).json({
+            ...json,
+            status: computedStatus,
+        });
     }
     catch (error) {
         if (error.name === 'ZodError') {
@@ -250,23 +267,124 @@ router.post('/', requireAuth_1.requireAuth, async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const events = await Event_1.Event.find().sort({ date: -1 });
-        // Convert all events to JSON with 'id' field
-        res.json(events.map(event => event.toJSON()));
+        const formattedEvents = events.map(event => {
+            const json = event.toJSON();
+            console.log(`📊 Event: ${json.title}, participantCount: ${json.participantCount}, type: ${typeof json.participantCount}`);
+            // Compute status dynamically from timestamps
+            const computedStatus = (0, eventStatus_1.computeEventStatus)({
+                isCancelled: json.isCancelled || false,
+                archivedAt: json.archivedAt || null,
+                date: new Date(json.date),
+                time: json.time,
+                endDate: new Date(json.endDate),
+                endTime: json.endTime,
+            });
+            return {
+                ...json,
+                status: computedStatus,
+            };
+        });
+        res.json(formattedEvents);
     }
     catch (error) {
         console.error('Fetch events error:', error);
         res.status(500).json({ error: 'Failed to fetch events' });
     }
 });
-// GET /:id
+// GET /trending - Get trending events (no auth required) - MUST come before /:id
+router.get('/trending', async (req, res) => {
+    try {
+        console.log('[Trending API] Request received');
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+        console.log(`[Trending API] Fetching with limit: ${limit}`);
+        const events = await (0, trendingService_1.getTrendingEvents)(limit);
+        console.log(`[Trending API] Returning ${events.length} events`);
+        res.json(events);
+    }
+    catch (error) {
+        console.error('Error fetching trending events:', error);
+        res.status(500).json({ error: 'Failed to fetch trending events' });
+    }
+});
+// GET /trending/scores - Get trending events with scoring info (admin only)
+router.get('/trending/scores', requireAuth_1.requireAuth, async (req, res) => {
+    try {
+        const user = await User_1.User.findById(req.session.userId);
+        if (!user || user.role !== 'super_admin') {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+        const scores = await (0, trendingService_1.getTrendingEventsWithScores)(limit);
+        res.json(scores);
+    }
+    catch (error) {
+        console.error('Error fetching trending scores:', error);
+        res.status(500).json({ error: 'Failed to fetch trending scores' });
+    }
+});
+// GET /admin/diagnostic - Super admin only: Show diagnostic info
+router.get('/admin/diagnostic', requireAuth_1.requireAuth, async (req, res) => {
+    try {
+        // Check if user is super admin
+        const { User } = await Promise.resolve().then(() => __importStar(require('../models/User')));
+        const user = await User.findById(req.session.userId);
+        if (user?.role !== 'super_admin') {
+            return res.status(403).json({ error: 'Only super admins can access diagnostics' });
+        }
+        const { Registration } = require('../models/Registration');
+        const events = await Event_1.Event.find().lean();
+        const totalRegistrations = await Registration.countDocuments();
+        const eventDiagnostics = await Promise.all(events.map(async (event) => {
+            const eventIdString = event._id.toString();
+            // Try both string and ObjectId matching
+            const registrationCount = await Registration.countDocuments({
+                $or: [
+                    { eventId: eventIdString },
+                    { eventId: event._id }
+                ]
+            });
+            return {
+                id: eventIdString,
+                title: event.title,
+                storedParticipantCount: event.participantCount,
+                actualRegistrationCount: registrationCount,
+                mismatch: event.participantCount !== registrationCount,
+                capacity: event.capacity
+            };
+        }));
+        res.json({
+            totalEvents: events.length,
+            totalRegistrations,
+            eventDiagnostics,
+            mismatchCount: eventDiagnostics.filter(e => e.mismatch).length
+        });
+    }
+    catch (error) {
+        console.error('Diagnostic error:', error);
+        res.status(500).json({ error: 'Failed to get diagnostic info' });
+    }
+});
+// GET /:id - MUST come AFTER specific routes like /trending and /admin/*
 router.get('/:id', async (req, res) => {
     try {
         const event = await Event_1.Event.findById(req.params.id);
         if (!event) {
             return res.status(404).json({ error: 'Event not found' });
         }
-        // Include 'id' field in response
-        res.json(event.toJSON());
+        // Include 'id' field in response and compute status
+        const json = event.toJSON();
+        const computedStatus = (0, eventStatus_1.computeEventStatus)({
+            isCancelled: json.isCancelled || false,
+            archivedAt: json.archivedAt || null,
+            date: new Date(json.date),
+            time: json.time,
+            endDate: new Date(json.endDate),
+            endTime: json.endTime,
+        });
+        res.json({
+            ...json,
+            status: computedStatus,
+        });
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to fetch event' });
@@ -279,12 +397,62 @@ router.patch('/:id', requireAuth_1.requireAuth, canModifyEvent, async (req, res)
         if (!event) {
             return res.status(404).json({ error: 'Event not found' });
         }
+        // 🔒 Prevent editing completed/archived/cancelled events
+        const eventStatus = (0, eventStatus_1.computeEventStatus)({
+            isCancelled: event.isCancelled || false,
+            archivedAt: event.archivedAt || null,
+            date: new Date(event.date),
+            time: event.time,
+            endDate: new Date(event.endDate),
+            endTime: event.endTime,
+        });
+        if (['completed', 'archived', 'cancelled'].includes(eventStatus)) {
+            return res.status(403).json({
+                error: 'EVENT_CANNOT_BE_EDITED',
+                message: `This event cannot be edited because its status is '${eventStatus}'. Only upcoming and live events can be edited.`,
+                details: {
+                    eventStatus,
+                    allowedStatuses: ['draft', 'upcoming', 'live']
+                }
+            });
+        }
+        // 🔒 Prevent payment configuration changes after event creation
+        // Once an event exists, its paid/free status and price must remain immutable
+        const originalIsPaid = event.isPaid;
+        const originalPrice = event.price;
         const data = eventValidation_1.createEventSchema.partial().parse(req.body);
-        // Convert date string to Date object if provided
+        // If client attempts to change payment-related fields, reject the update explicitly
+        if (typeof data.isPaid !== 'undefined' && data.isPaid !== originalIsPaid) {
+            return res.status(400).json({
+                error: 'PAYMENT_FIELDS_IMMUTABLE',
+                message: 'Event payment settings (paid/free toggle) cannot be changed after the event is created.',
+                details: {
+                    field: 'isPaid',
+                    originalValue: originalIsPaid,
+                    attemptedValue: data.isPaid,
+                },
+            });
+        }
+        if (typeof data.price !== 'undefined' && data.price !== originalPrice) {
+            return res.status(400).json({
+                error: 'PAYMENT_FIELDS_IMMUTABLE',
+                message: 'Event payment amount cannot be changed after the event is created.',
+                details: {
+                    field: 'price',
+                    originalValue: originalPrice,
+                    attemptedValue: data.price,
+                },
+            });
+        }
+        // Convert date strings to Date objects if provided
         const updateData = { ...data };
         if (data.date) {
             updateData.date = new Date(data.date);
         }
+        if (data.endDate) {
+            updateData.endDate = new Date(data.endDate);
+        }
+        // endTime and time remain as HH:mm format strings
         // Track changes for logging
         const changes = [];
         const oldData = { ...event.toObject() };
@@ -312,7 +480,20 @@ router.patch('/:id', requireAuth_1.requireAuth, canModifyEvent, async (req, res)
         }
         // Log the event update
         await (0, logger_1.logEventUpdate)(req.session.userId, event._id.toString(), event.title, changes, (0, logger_1.extractRequestMetadata)(req));
-        res.json(event.toJSON());
+        // Return updated event with computed status
+        const json = event.toJSON();
+        const computedStatus = (0, eventStatus_1.computeEventStatus)({
+            isCancelled: json.isCancelled || false,
+            archivedAt: json.archivedAt || null,
+            date: new Date(json.date),
+            time: json.time,
+            endDate: new Date(json.endDate),
+            endTime: json.endTime,
+        });
+        res.json({
+            ...json,
+            status: computedStatus,
+        });
     }
     catch (error) {
         if (error.name === 'ZodError') {
@@ -371,6 +552,44 @@ router.delete('/:id', requireAuth_1.requireAuth, canModifyEvent, async (req, res
     catch (error) {
         console.error('Delete event error:', error);
         res.status(500).json({ error: 'Failed to delete event' });
+    }
+});
+// POST /recalculate-participant-counts - Super admin only: Recalculate all participant counts from Registration records
+router.post('/admin/recalculate-participant-counts', requireAuth_1.requireAuth, async (req, res) => {
+    try {
+        // Check if user is super admin
+        const { User } = await Promise.resolve().then(() => __importStar(require('../models/User')));
+        const user = await User.findById(req.session.userId);
+        if (user?.role !== 'super_admin') {
+            return res.status(403).json({ error: 'Only super admins can recalculate counts' });
+        }
+        const { Registration } = require('../models/Registration');
+        // Get all events
+        const events = await Event_1.Event.find();
+        const results = [];
+        for (const event of events) {
+            // Count registrations for this event
+            const count = await Registration.countDocuments({ eventId: event._id.toString() });
+            // Update event
+            if (event.participantCount !== count) {
+                await Event_1.Event.findByIdAndUpdate(event._id, { participantCount: count });
+                results.push({ title: event.title, oldCount: event.participantCount, newCount: count, status: 'updated' });
+                console.log(`📊 Recalculated ${event.title}: ${event.participantCount} → ${count}`);
+            }
+            else {
+                results.push({ title: event.title, count: count, status: 'no-change' });
+            }
+        }
+        res.json({
+            message: 'Participant counts recalculated',
+            results,
+            totalEvents: events.length,
+            eventsUpdated: results.filter(r => r.status === 'updated').length
+        });
+    }
+    catch (error) {
+        console.error('Recalculate participant counts error:', error);
+        res.status(500).json({ error: 'Failed to recalculate participant counts' });
     }
 });
 exports.default = router;

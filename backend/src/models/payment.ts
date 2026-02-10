@@ -1,13 +1,24 @@
 // backend/src/models/Payment.ts
 import { Schema, model } from 'mongoose';
 
+export type PaymentStatus = 'initiated' | 'pending' | 'completed' | 'failed';
+export type PaymentMethod = 'esewa' | 'other';
+
 export interface IPayment {
   userId: string;
   eventId: string;
-  amount: number;
-  status: 'pending' | 'completed' | 'failed';
+  amount: number; // in paisa
+  status: PaymentStatus;
   transactionId?: string;
-  method: string;
+  method: PaymentMethod;
+  /**
+   * eSewa verification data stored for audit trail
+   */
+  verificationData?: any;
+  /**
+   * Registration data to be used after payment is verified
+   */
+  registrationData?: any;
   emailSent?: boolean;
   createdAt: Date;
 }
@@ -18,11 +29,18 @@ const paymentSchema = new Schema<IPayment>({
   amount: { type: Number, required: true },
   status: { 
     type: String, 
-    enum: ['pending', 'completed', 'failed'], 
-    default: 'pending' 
+    enum: ['initiated', 'pending', 'completed', 'failed'], 
+    default: 'initiated' 
   },
   transactionId: { type: String },
-  method: { type: String, required: true },
+  method: { 
+    type: String, 
+    enum: ['esewa', 'other'], 
+    default: 'esewa',
+    required: true 
+  },
+  verificationData: { type: Schema.Types.Mixed },
+  registrationData: { type: Schema.Types.Mixed },
   emailSent: { type: Boolean, default: false }
 }, { timestamps: true });
 

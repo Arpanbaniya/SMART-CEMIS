@@ -5,7 +5,9 @@ export interface IUser {
     lastName: string | null;
     gender?: 'male' | 'female' | 'other';
     role: 'user' | 'student_admin' | 'super_admin';
-    preference: 'physical' | 'innovative' | 'both';
+    preference: 'physical' | 'innovative';
+    phone?: string;
+    bio?: string;
     profileImageUrl?: string | null;
     lastLogin?: Date;
     isVerified: boolean;

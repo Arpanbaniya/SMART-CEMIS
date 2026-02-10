@@ -7,8 +7,8 @@ export const EVENT_CATEGORIES = [
 ] as const;
 
 export const USER_ROLES = ["user", "student_admin", "super_admin"] as const;
-export const EVENT_STATUS = ["draft", "upcoming", "ongoing", "completed", "cancelled"] as const;
-export const USER_PREFERENCES = ["physical", "innovative", "both"] as const;
+export const EVENT_STATUS = ["draft", "upcoming", "live", "completed", "archived", "cancelled"] as const;
+export const USER_PREFERENCES = ["physical", "innovative"] as const;
 
 // ====== REUSABLE TYPES ======
 export type EventCategory = typeof EVENT_CATEGORIES[number];
@@ -37,6 +37,8 @@ export interface Event {
   category: EventCategory; // 
   date: string;
   time: string;
+  endDate: string; // When the event ends (date)
+  endTime: string; // When the event ends (time)
   location: string;
   capacity: number;
   participantCount: number;
@@ -54,6 +56,8 @@ export interface Event {
   maxTeams?: number;
   maxTeamMembers?: number;
   genderFixed?: 'Male' | 'Female' | 'Other' | null;
+  isCancelled?: boolean; // If event was cancelled
+  archivedAt?: string; // When the event was archived
   createdAt: string;
   updatedAt: string;
   created_at: string;
@@ -80,9 +84,9 @@ export interface Payment {
   userId: string;
   eventId: string;
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'initiated' | 'pending' | 'completed' | 'failed';
   transactionId?: string;
-  method: string;
+  method: 'esewa' | 'other';
   createdAt: string;
 }
 

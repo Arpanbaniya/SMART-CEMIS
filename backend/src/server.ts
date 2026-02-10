@@ -28,6 +28,8 @@ import logsRoutes from './routes/logsRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import teamRoutes from './routes/teamRoutes';
 import tournamentRoutes from './routes/tournamentRoutes';
+import recommendationRoutes from './routes/recommendationRoutes';
+import descriptionRoutes from './routes/descriptionRoutes';
 
 // Verify critical environment variables
 if (!process.env.OPENAI_API_KEY) {
@@ -114,9 +116,36 @@ app.use(session({
 
 // Database connection with retry logic
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/myevent')
-  .then(() => {
+  .then(async () => {
     console.log('✅ Connected to MongoDB successfully');
     console.log(`📊 Database: ${process.env.MONGODB_URI || 'mongodb://localhost:27017/myevent'}`);
+    
+    // Auto-recalculate participant counts on startup to fix any inconsistencies
+    try {
+      const Event = (await import('./models/Event')).Event;
+      const Registration = (await import('./models/Registration')).Registration;
+      
+      const events = await Event.find();
+      let mismatches = 0;
+      
+      for (const event of events) {
+        const actualCount = await Registration.countDocuments({ eventId: event._id.toString() });
+        if (event.participantCount !== actualCount) {
+          await Event.findByIdAndUpdate(event._id, { participantCount: actualCount });
+          console.log(`📊 Fixed participant count for "${event.title}": ${event.participantCount} → ${actualCount}`);
+          mismatches++;
+        }
+      }
+      
+      if (mismatches > 0) {
+        console.log(`⚠️  Fixed ${mismatches} participant count mismatch(es)`);
+      } else {
+        console.log('✅ All participant counts are consistent');
+      }
+    } catch (error) {
+      console.error('⚠️  Error during participant count verification:', error);
+      // Don't fail startup if this fails
+    }
   })
   .catch(err => {
     console.error('❌ MongoDB connection error:', err);
@@ -290,9 +319,15 @@ app.use('/api/admin', adminRequestRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/admin/payments', paymentRoutes);
+// Public payment endpoints (initiate / verify) and admin payment management
+app.use('/api/payment', paymentRoutes);       // /initiate, /verify
+app.use('/api/admin/payments', paymentRoutes); // admin listing, preview, resend
 app.use('/api/admin/logs', logsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+// ML Recommendation endpoints
+app.use('/api/recommendations', recommendationRoutes);
+// AI Description Generator endpoints
+app.use('/api/descriptions', descriptionRoutes);
 
 // Enhanced health check endpoint
 app.get('/health', (req, res) => {

@@ -1,8 +1,10 @@
 import { Link } from "wouter";
 import { Calendar, Github, Twitter, Mail, Heart } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Footer() {
+  const { user } = useAuth();
   return (
     <footer className="border-t bg-card">
       <div className="container mx-auto px-4 py-12">
@@ -21,9 +23,11 @@ export function Footer() {
           <div className="space-y-4">
             <h4 className="font-semibold">Quick Links</h4>
             <nav className="flex flex-col gap-2 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-home">
-                Home
-              </Link>
+              {user?.role !== 'super_admin' && (
+                <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-home">
+                  Home
+                </Link>
+              )}
               <Link href="/events" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-events">
                 All Events
               </Link>
@@ -34,21 +38,34 @@ export function Footer() {
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-semibold">Categories</h4>
-            <nav className="flex flex-col gap-2 text-sm">
-              <Link href="/?category=sports" className="text-muted-foreground hover:text-foreground transition-colors">
-                Sports
-              </Link>
-              <Link href="/?category=technology" className="text-muted-foreground hover:text-foreground transition-colors">
-                Technology
-              </Link>
-              <Link href="/?category=cultural" className="text-muted-foreground hover:text-foreground transition-colors">
-                Cultural
-              </Link>
-              <Link href="/?category=academic" className="text-muted-foreground hover:text-foreground transition-colors">
-                Academic
-              </Link>
-            </nav>
+            {user?.role !== 'super_admin' ? (
+              <>
+                <h4 className="font-semibold">Categories</h4>
+                <nav className="flex flex-col gap-2 text-sm">
+                  <Link href="/?category=sports" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Sports
+                  </Link>
+                  <Link href="/?category=technology" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Technology
+                  </Link>
+                  <Link href="/?category=cultural" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Cultural
+                  </Link>
+                  <Link href="/?category=academic" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Academic
+                  </Link>
+                </nav>
+              </>
+            ) : (
+              <>
+                <h4 className="font-semibold">Admin</h4>
+                <nav className="flex flex-col gap-2 text-sm">
+                  <Link href="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Admin Dashboard
+                  </Link>
+                </nav>
+              </>
+            )}
           </div>
 
           <div className="space-y-4">

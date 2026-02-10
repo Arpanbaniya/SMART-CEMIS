@@ -49,7 +49,7 @@ export default function ProfilePage() {
   }>({
     phone: "",
     bio: "",
-    preference: "both",
+    preference: "physical",
   });
 
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -154,14 +154,16 @@ export default function ProfilePage() {
                   <Mail className="h-4 w-4" />
                   {user?.email}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">
-                    {profile?.role || "user"}
-                  </Badge>
-                  <Badge variant="outline">
-                    {registrations.length} events attended
-                  </Badge>
-                </div>
+                {profile?.role !== 'super_admin' && (
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">
+                      {profile?.role || "user"}
+                    </Badge>
+                    <Badge variant="outline">
+                      {registrations.length} events attended
+                    </Badge>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -181,32 +183,34 @@ export default function ProfilePage() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center space-y-2">
-                      <div className="text-4xl font-bold text-primary">{registrations.length}</div>
-                      <div className="text-sm text-muted-foreground">Events Registered</div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center space-y-2">
-                      <div className="text-4xl font-bold text-primary">{pastEvents.length}</div>
-                      <div className="text-sm text-muted-foreground">Events Attended</div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center space-y-2">
-                      <div className="text-4xl font-bold text-primary">{upcomingRegistrations.length}</div>
-                      <div className="text-sm text-muted-foreground">Upcoming Events</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              {profile?.role !== 'super_admin' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center space-y-2">
+                        <div className="text-4xl font-bold text-primary">{registrations.length}</div>
+                        <div className="text-sm text-muted-foreground">Events Registered</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center space-y-2">
+                        <div className="text-4xl font-bold text-primary">{pastEvents.length}</div>
+                        <div className="text-sm text-muted-foreground">Events Attended</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center space-y-2">
+                        <div className="text-4xl font-bold text-primary">{upcomingRegistrations.length}</div>
+                        <div className="text-sm text-muted-foreground">Upcoming Events</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
               <Card>
                 <CardHeader>
@@ -236,19 +240,21 @@ export default function ProfilePage() {
                         {profile?.phone || "Not provided"}
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Preference</Label>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Award className="h-4 w-4" />
-                        {profile?.preference === "physical"
-                          ? "Physical Activities"
-                          : profile?.preference === "innovative"
-                          ? "Innovative/Tech"
-                          : "Both"}
+                    {profile?.role !== 'super_admin' && (
+                      <div className="space-y-2">
+                        <Label>Preference</Label>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Award className="h-4 w-4" />
+                          {profile?.preference === "physical"
+                            ? "Physical Activities"
+                            : profile?.preference === "innovative"
+                            ? "Innovative/Tech"
+                            : "Both"}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                  {profile?.bio && (
+                  {profile?.role !== 'super_admin' && profile?.bio && (
                     <div className="space-y-2">
                       <Label>Bio</Label>
                       <p className="text-muted-foreground">{profile.bio}</p>
@@ -275,7 +281,7 @@ export default function ProfilePage() {
                           setEditForm({
                             phone: profile?.phone || "",
                             bio: profile?.bio || "",
-                             preference: (profile?.preference ?? "both") as UserPreference,
+                             preference: (profile?.preference ?? "physical") as UserPreference,
                           });
                           setIsEditing(true);
                         }
@@ -299,42 +305,64 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      placeholder="Your email"
+                      value={profile?.email || ""}
+                      disabled={true}
+                      data-testid="input-email"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Email verification will be required to change your email address. Coming soon.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
                     <Label>Phone Number</Label>
                     <Input
                       placeholder="Enter your phone number"
+                      type="tel"
+                      maxLength={10}
+                      pattern="[0-9]*"
                       value={editForm.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                        setEditForm({ ...editForm, phone: value });
+                      }}
                       disabled={!isEditing}
                       data-testid="input-phone"
                     />
+                    <p className="text-xs text-muted-foreground">10 digits maximum</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Event Preference</Label>
-                    <Select
-                      value={editForm.preference}
-                      onValueChange={(value: UserPreference) => setEditForm({ ...editForm, preference: value })}
-                      disabled={!isEditing}
-                    >
-                      <SelectTrigger data-testid="select-preference">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="physical">Physical Activities (Sports, etc.)</SelectItem>
-                        <SelectItem value="innovative">Innovative/Tech (Hackathons, etc.)</SelectItem>
-                        <SelectItem value="both">Both</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Bio</Label>
-                    <Textarea
-                      placeholder="Tell us about yourself..."
-                      value={editForm.bio}
-                      onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                      disabled={!isEditing}
-                      data-testid="textarea-bio"
-                    />
-                  </div>
+                  {profile?.role !== 'super_admin' && (
+                    <div className="space-y-2">
+                      <Label>Event Preference</Label>
+                      <Select
+                        value={editForm.preference}
+                        onValueChange={(value: UserPreference) => setEditForm({ ...editForm, preference: value })}
+                        disabled={!isEditing}
+                      >
+                        <SelectTrigger data-testid="select-preference">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="physical">Physical Activities (Sports, etc.)</SelectItem>
+                          <SelectItem value="innovative">Innovative/Tech (Hackathons, etc.)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {profile?.role !== 'super_admin' && (
+                    <div className="space-y-2">
+                      <Label>Bio</Label>
+                      <Textarea
+                        placeholder="Tell us about yourself..."
+                        value={editForm.bio}
+                        onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                        disabled={!isEditing}
+                        data-testid="textarea-bio"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

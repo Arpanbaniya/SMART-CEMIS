@@ -5,6 +5,7 @@ import { Registration } from '../models/Registration';
 import { Event } from '../models/Event';
 import { User } from '../models/User';
 import { Team } from '../models/Team';
+import { computeEventStatus } from '../utils/eventStatus';
 
 // Import broadcast function
 declare global {
@@ -43,7 +44,34 @@ router.get('/:userId/registrations', requireAuth, async (req: Request, res: Resp
       .populate('eventId')
       .sort({ registeredAt: -1 });
 
-    res.json(registrations.map(reg => reg.toJSON()));
+    // Compute event status dynamically
+    const registrationsWithStatus = registrations.map(reg => {
+      const regJson = reg.toJSON();
+      if (regJson.eventId && typeof regJson.eventId === 'object') {
+        const event = regJson.eventId as any;
+        if (event && event.date && event.endDate) {
+          const computedStatus = computeEventStatus({
+            isCancelled: event.isCancelled || false,
+            archivedAt: event.archivedAt || null,
+            date: new Date(event.date),
+            time: event.time,
+            endDate: new Date(event.endDate),
+            endTime: event.endTime,
+          });
+          
+          return {
+            ...regJson,
+            eventId: {
+              ...event,
+              status: computedStatus,
+            }
+          };
+        }
+      }
+      return regJson;
+    });
+
+    res.json(registrationsWithStatus);
   } catch (error) {
     console.error('Fetch registrations error:', error);
     res.status(500).json({ error: 'Failed to fetch registrations' });
@@ -199,6 +227,34 @@ router.post('/:eventId/register', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Event is full' });
     }
 
+    // For paid events, ensure a completed payment exists before allowing registration
+    if (event.isPaid && event.price && event.price > 0) {
+      try {
+        const { Payment } = await import('../models/payment');
+        const completedPayment = await Payment.findOne({
+          userId,
+          eventId: event._id.toString(),
+          status: 'completed'
+        });
+
+        if (!completedPayment) {
+          console.log('No completed payment found for paid event, blocking registration', {
+            userId,
+            eventId
+          });
+          return res.status(402).json({
+            error: 'PAYMENT_REQUIRED',
+            message: 'Payment is required before registering for this event.'
+          });
+        }
+      } catch (paymentError) {
+        console.error('Error checking payment status for registration:', paymentError);
+        return res.status(500).json({
+          error: 'Failed to verify payment status for this event'
+        });
+      }
+    }
+
     // Create registration with detailed student information
     console.log('Creating registration with data:', {
       userId,
@@ -264,10 +320,10 @@ router.post('/:eventId/register', requireAuth, async (req, res) => {
 
     // Update event participant count
     try {
-      await Event.findByIdAndUpdate(eventId, {
+      const updatedEvent = await Event.findByIdAndUpdate(eventId, {
         $inc: { participantCount: 1 }
-      });
-      console.log('Event participant count updated successfully');
+      }, { new: true });
+      console.log('✅ Event participant count updated. New count:', updatedEvent?.participantCount);
     } catch (error) {
       console.error('Error updating event participant count:', error);
       return res.status(500).json({ error: 'Failed to update event participant count' });
@@ -478,7 +534,10 @@ router.get('/:eventId/check-registration', requireAuth, async (req, res) => {
       eventId,
     });
 
-    res.json({ isRegistered: !!registration });
+    res.json({ 
+      isRegistered: !!registration,
+      registeredAt: registration?.registeredAt || null
+    });
   } catch (error) {
     console.error('Check registration error:', error);
     res.status(500).json({ error: 'Failed to check registration status' });

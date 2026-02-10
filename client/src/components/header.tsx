@@ -39,6 +39,13 @@ export default function Header() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Debug: Log user role
+  useEffect(() => {
+    if (user) {
+      console.log('Header - User data:', { role: user.role, email: user.email });
+    }
+  }, [user]);
+
   const getUserName = () => {
     if (!user) return "User";
     if (user.firstName && user.lastName) {
@@ -98,7 +105,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full glass-header animate-slideDown">
       <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href={user?.role === 'super_admin' ? '/events' : '/'} className="flex items-center gap-2 group">
           <div className="relative">
             <Calendar className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-300" />
             <div className="absolute -inset-1 bg-primary/20 rounded-lg blur-md group-hover:bg-primary/30 transition-colors duration-300"></div>
@@ -145,19 +152,21 @@ export default function Header() {
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/favorites" className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md p-2 transition-all duration-200" data-testid="link-favorites">
-                      <Heart className="h-4 w-4" />
-                      Favorite Events
-                    </Link>
-                  </DropdownMenuItem>
                   {user?.role !== 'super_admin' && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/registrations" className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md p-2 transition-all duration-200" data-testid="link-registrations">
-                        <Users className="h-4 w-4" />
-                        Registered Events
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/favorites" className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md p-2 transition-all duration-200" data-testid="link-favorites">
+                          <Heart className="h-4 w-4" />
+                          Favorite Events
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/registrations" className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md p-2 transition-all duration-200" data-testid="link-registrations">
+                          <Users className="h-4 w-4" />
+                          Registered Events
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   {(user?.role === 'super_admin' || user?.role === 'student_admin') && (
                     <DropdownMenuItem asChild>

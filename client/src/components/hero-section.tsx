@@ -48,23 +48,7 @@ export function HeroSection() {
               </Button>
             )}
           </div>
-          
-          <div className="flex items-center gap-8 pt-8">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white">500+</div>
-              <div className="text-sm text-white/70">Events Hosted</div>
-            </div>
-            <div className="h-12 w-px bg-white/20" />
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white">10k+</div>
-              <div className="text-sm text-white/70">Active Users</div>
-            </div>
-            <div className="h-12 w-px bg-white/20" />
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white">50+</div>
-              <div className="text-sm text-white/70">Organizations</div>
-            </div>
-          </div>
+
         </div>
       </div>
     </section>

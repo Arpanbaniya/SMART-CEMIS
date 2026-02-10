@@ -1,11 +1,13 @@
 export declare const EVENT_CATEGORIES: readonly ["sports", "technology", "cultural", "academic", "music", "art", "workshop", "competition", "social", "other"];
-export declare const EVENT_STATUS: readonly ["draft", "upcoming", "ongoing", "completed", "cancelled"];
+export declare const EVENT_STATUS: readonly ["draft", "upcoming", "live", "completed", "archived", "cancelled"];
 export interface IEvent {
     title: string;
     description: string;
     category: string;
     date: Date;
     time: string;
+    endDate: Date;
+    endTime: string;
     location?: string;
     capacity: number;
     participantCount: number;
@@ -21,6 +23,10 @@ export interface IEvent {
     maxTeams?: number;
     maxTeamMembers?: number;
     genderFixed?: 'Male' | 'Female' | 'Other' | null;
+    isCancelled?: boolean;
+    archivedAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 export declare const Event: import("mongoose").Model<IEvent, {}, {}, {}, import("mongoose").Document<unknown, {}, IEvent, {}, import("mongoose").DefaultSchemaOptions> & IEvent & {
     _id: import("mongoose").Types.ObjectId;

@@ -5,6 +5,8 @@ export declare const createEventSchema: z.ZodObject<{
     category: z.ZodEnum<["sports", "technology", "cultural", "academic", "music", "art", "workshop", "competition", "social", "other"]>;
     date: z.ZodString;
     time: z.ZodString;
+    endDate: z.ZodString;
+    endTime: z.ZodString;
     location: z.ZodString;
     imageUrl: z.ZodUnion<[z.ZodOptional<z.ZodString>, z.ZodLiteral<"">]>;
     mapUrl: z.ZodUnion<[z.ZodOptional<z.ZodString>, z.ZodLiteral<"">]>;
@@ -24,6 +26,8 @@ export declare const createEventSchema: z.ZodObject<{
     title?: string;
     category?: "other" | "sports" | "technology" | "cultural" | "academic" | "music" | "art" | "workshop" | "competition" | "social";
     time?: string;
+    endDate?: string;
+    endTime?: string;
     location?: string;
     capacity?: number;
     isPaid?: boolean;
@@ -43,6 +47,8 @@ export declare const createEventSchema: z.ZodObject<{
     title?: string;
     category?: "other" | "sports" | "technology" | "cultural" | "academic" | "music" | "art" | "workshop" | "competition" | "social";
     time?: string;
+    endDate?: string;
+    endTime?: string;
     location?: string;
     capacity?: number;
     isPaid?: boolean;

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LogIn, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -38,7 +38,11 @@ export default function LoginPage() {
           title: "Login successful!",
           description: "Welcome back to EventHub!"
         });
-        window.location.href = "/";
+        // Invalidate auth cache to refresh user data with new role
+        await queryClient.invalidateQueries({ queryKey: ['auth/user'] });
+        // Redirect superadmin to events page, regular users to home
+        const redirectUrl = data.user.role === 'super_admin' ? '/events' : '/';
+        window.location.href = redirectUrl;
       } else {
         setError("Invalid email or password");
       }

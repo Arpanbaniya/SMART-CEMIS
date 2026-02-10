@@ -26,11 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Calendar, MapPin, Clock, Users, DollarSign, Trophy, Image } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Clock, Users, DollarSign, Trophy, Image, Wand2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EVENT_CATEGORIES } from "@/lib/constants";
+import { AIDescriptionModal } from "@/components/AIDescriptionModal";
 
 const editEventSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -38,6 +39,8 @@ const editEventSchema = z.object({
   category: z.string().min(1, "Please select a category"),
   date: z.string().min(1, "Please select a date"),
   time: z.string().min(1, "Please enter a time"),
+  endDate: z.string().min(1, "Please select an end date"),
+  endTime: z.string().min(1, "Please enter event end time"),
   location: z.string().optional(),
   imageUrl: z.string().optional().or(z.literal("")).refine((val) => {
     if (!val || val === "") return true;
@@ -94,6 +97,7 @@ export default function EditEventPage() {
   const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const params = useParams();
   const eventId = params.id;
 
@@ -114,6 +118,8 @@ export default function EditEventPage() {
       category: "",
       date: "",
       time: "",
+      endDate: "",
+      endTime: "",
       location: "",
       imageUrl: "",
       mapUrl: "",
@@ -129,12 +135,21 @@ export default function EditEventPage() {
   // Populate form when event data is loaded
   useEffect(() => {
     if (event) {
+      // Handle backward compatibility: if endDate/endTime don't exist, use fallbacks
+      const endDateValue = event.endDate 
+        ? new Date(event.endDate).toISOString().split('T')[0]
+        : new Date(event.date).toISOString().split('T')[0]; // Default to same day
+      
+      const endTimeValue = event.endTime || '23:59'; // Default to 23:59 if missing
+      
       form.reset({
         title: event.title,
         description: event.description,
         category: event.category,
         date: new Date(event.date).toISOString().split('T')[0],
         time: event.time,
+        endDate: endDateValue,
+        endTime: endTimeValue,
         location: event.location,
         imageUrl: event.imageUrl || "",
         mapUrl: event.mapUrl || "",
@@ -152,7 +167,8 @@ export default function EditEventPage() {
     mutationFn: async (data: EditEventForm) => {
       return apiRequest("PATCH", `/api/events/${eventId}`, {
         ...data,
-        date: new Date(data.date).toISOString(),
+        date: new Date(`${data.date}T${data.time}`).toISOString(),
+        endDate: new Date(`${data.endDate}T${data.endTime}`).toISOString(),
       });
     },
     onSuccess: () => {
@@ -195,6 +211,36 @@ export default function EditEventPage() {
   });
 
   const onSubmit = (data: EditEventForm) => {
+    // Validate that endDate is same as or after start date
+    const selectedDate = new Date(data.date);
+    const selectedEndDate = new Date(data.endDate);
+
+    if (selectedEndDate < selectedDate) {
+      toast({
+        title: "Invalid End Date",
+        description: "End date must be the same as or after the start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If dates are the same, endTime must be after startTime
+    if (selectedDate.getTime() === selectedEndDate.getTime()) {
+      const [startHours, startMinutes] = data.time.split(':').map(Number);
+      const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+      const startTimeMinutes = startHours * 60 + startMinutes;
+      const endTimeMinutes = endHours * 60 + endMinutes;
+      
+      if (endTimeMinutes <= startTimeMinutes) {
+        toast({
+          title: "Invalid End Time",
+          description: "End time must be after the start time for same-day events.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     updateMutation.mutate(data);
   };
 
@@ -290,7 +336,19 @@ export default function EditEventPage() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Description</FormLabel>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Description</FormLabel>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAIModalOpen(true)}
+                              className="hover-elevate"
+                            >
+                              <Wand2 className="h-4 w-4 mr-2" />
+                              ✨ AI Assist
+                            </Button>
+                          </div>
                           <FormControl>
                             <Textarea
                               placeholder="Describe your event..."
@@ -369,6 +427,48 @@ export default function EditEventPage() {
                             <FormMessage />
                           </FormItem>
                         )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="endTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              End Time
+                            </FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => {
+                          const today = new Date().toISOString().split('T')[0];
+                          
+                          return (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                End Date
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="date" 
+                                  {...field} 
+                                  min={today}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                     </div>
 
@@ -638,6 +738,13 @@ export default function EditEventPage() {
                   </div>
                 </form>
               </Form>
+              <AIDescriptionModal
+                isOpen={isAIModalOpen}
+                onClose={() => setIsAIModalOpen(false)}
+                title={form.watch("title")}
+                currentDescription={form.watch("description")}
+                onApply={(text) => form.setValue("description", text)}
+              />
             </CardContent>
           </Card>
         </div>

@@ -7,7 +7,7 @@ export const EVENT_CATEGORIES = [
   "art", "workshop", "competition", "social", "other"
 ] as const;
 
-export const EVENT_STATUS = ["draft", "upcoming", "ongoing", "completed", "cancelled"] as const;
+export const EVENT_STATUS = ["draft", "upcoming", "live", "completed", "archived", "cancelled"] as const;
 
 export interface IEvent {
   title: string;
@@ -15,6 +15,8 @@ export interface IEvent {
   category: string;
   date: Date;
   time: string;
+  endDate: Date; // End date
+  endTime: string; // End time
   location?: string;
   capacity: number;
   participantCount: number;
@@ -30,6 +32,10 @@ export interface IEvent {
   maxTeams?: number;
   maxTeamMembers?: number;
   genderFixed?: 'Male' | 'Female' | 'Other' | null;
+  isCancelled?: boolean; // If event was cancelled
+  archivedAt?: Date; // When the event was archived (5 days after completion)
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const eventSchema = new Schema<IEvent>({
@@ -38,6 +44,8 @@ const eventSchema = new Schema<IEvent>({
   category: { type: String, enum: EVENT_CATEGORIES, required: true },
   date: { type: Date, required: true },
   time: { type: String, required: true },
+  endDate: { type: Date, required: true }, // End date
+  endTime: { type: String, required: true }, // End time
   location: { type: String, required: false },
   capacity: { type: Number, default: 100 },
   participantCount: { type: Number, default: 0 },
@@ -53,6 +61,8 @@ const eventSchema = new Schema<IEvent>({
   maxTeams: { type: Number },
   maxTeamMembers: { type: Number },
   genderFixed: { type: String, enum: ['Male', 'Female', 'Other'], default: null },
+  isCancelled: { type: Boolean, default: false }, // If event was cancelled
+  archivedAt: { type: Date, default: null }, // When the event was archived (5 days after completion)
 }, { timestamps: true });
 
 // ADD THIS: Map _id to id for frontend

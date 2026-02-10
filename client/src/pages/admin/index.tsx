@@ -867,7 +867,8 @@ export default function AdminDashboard() {
   };
 
   const totalParticipants = events.reduce((sum, e) => sum + (e.participantCount || 0), 0);
-  const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  // Payment amounts are stored in paisa, convert to NPR for display
+  const totalRevenue = payments.reduce((sum, p) => sum + ((p.amount || 0) / 100), 0);
   const pendingRequests = requests.filter((r) => r.status === "pending").length;
 
   // Fetch real analytics data
@@ -972,7 +973,7 @@ export default function AdminDashboard() {
     <div className="flex h-screen w-full flex-col">
       <header className="flex items-center justify-between gap-4 border-b px-8 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Link href="/events" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Calendar className="h-7 w-7 text-primary" />
             <span className="font-display text-xl font-bold">EventHub</span>
           </Link>
@@ -1008,12 +1009,6 @@ export default function AdminDashboard() {
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/favorites" className="cursor-pointer">
-                  <Heart className="mr-2 h-4 w-4" />
-                  My Favorite Events
-                </Link>
-              </DropdownMenuItem>
               {user?.role === 'student_admin' && (
                 <DropdownMenuItem asChild>
                   <Link href="/registrations" className="cursor-pointer">
@@ -1023,7 +1018,7 @@ export default function AdminDashboard() {
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem asChild>
-                <Link href="/" className="cursor-pointer">
+                <Link href="/events" className="cursor-pointer">
                   <Home className="mr-2 h-4 w-4" />
                   Back to Events
                 </Link>
@@ -1061,7 +1056,7 @@ export default function AdminDashboard() {
               />
               <StatCard
                 title="Revenue (NPR)"
-                value={formatCurrency(analyticsOverview.totalRevenue)}
+                value={formatCurrency(analyticsOverview.totalRevenue / 100)}
                 icon={DollarSign}
                 change={analyticsOverview.revenueChange}
                 changeLabel="from last month"
@@ -1366,38 +1361,27 @@ export default function AdminDashboard() {
                         <table className="w-full text-left">
                           <thead className="bg-muted">
                             <tr>
-                              <th className="px-6 py-3 text-sm">User</th>
+                              <th className="px-6 py-3 text-sm">User Email</th>
                               <th className="px-6 py-3 text-sm">Event</th>
                               <th className="px-6 py-3 text-sm">Amount</th>
                               <th className="px-6 py-3 text-sm">Status</th>
-                              <th className="px-6 py-3 text-sm">Txn</th>
-                              <th className="px-6 py-3 text-sm" />
                             </tr>
                           </thead>
                           <tbody>
-                            {payments.map((p) => (
+                            {payments.map((p: any) => (
                               <tr key={p.id} className="border-t">
-                                <td className="px-6 py-4 text-sm">{p.userId}</td>
-                                <td className="px-6 py-4 text-sm">{p.eventId}</td>
-                                <td className="px-6 py-4 text-sm">{formatCurrency(p.amount || 0)}</td>
-                                <td className="px-6 py-4 text-sm">{p.status}</td>
-                                <td className="px-6 py-4 text-sm">{p.transactionId}</td>
-                                <td className="px-6 py-4 text-right">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="mr-2"
-                                    onClick={() => handlePreview(p.id)}
-                                  >
-                                    Preview
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => resendMutation.mutate(p.id)}
-                                  >
-                                    Resend Email
-                                  </Button>
+                                <td className="px-6 py-4 text-sm">{p.userId?.email || 'N/A'}</td>
+                                <td className="px-6 py-4 text-sm">{p.eventId?.title || 'N/A'}</td>
+                                <td className="px-6 py-4 text-sm">{formatCurrency((p.amount || 0) / 100)}</td>
+                                <td className="px-6 py-4 text-sm">
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                    p.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    p.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    p.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {p.status}
+                                  </span>
                                 </td>
                               </tr>
                             ))}
@@ -1614,11 +1598,13 @@ export default function AdminDashboard() {
                                   </Button>
                                   {(user?.role === 'super_admin' || (user?.role === 'student_admin' && event.createdById === user?.id)) && (
                                     <>
-                                      <Button variant="ghost" size="icon" asChild>
-                                        <Link href={`/admin/edit-event/${event.id}`}>
-                                          <Edit className="h-4 w-4" />
-                                        </Link>
-                                      </Button>
+                                      {!['completed', 'archived', 'cancelled'].includes(event.status) && (
+                                        <Button variant="ghost" size="icon" asChild>
+                                          <Link href={`/admin/edit-event/${event.id}`}>
+                                            <Edit className="h-4 w-4" />
+                                          </Link>
+                                        </Button>
+                                      )}
                                       <Button 
                                         variant="ghost" 
                                         size="icon"

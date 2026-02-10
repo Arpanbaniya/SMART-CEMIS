@@ -197,7 +197,15 @@ export default function EventDetailPage() {
   });
 
   // Check if current user can edit this event (moved here to be used in queries below)
-  const finalCanEditEvent = user && (
+  const finalCanEditEvent = user && event && (
+    user.role === 'super_admin' || 
+    (user.role === 'student_admin' && event?.createdById === user.id)
+  ) && 
+  // Cannot edit if event is completed, archived, or cancelled
+  !['completed', 'archived', 'cancelled'].includes(event?.status);
+
+  // Check if current user can delete this event (more permissive - allows deletion of completed/archived)
+  const canDeleteEvent = user && event && (
     user.role === 'super_admin' || 
     (user.role === 'student_admin' && event?.createdById === user.id)
   );
@@ -538,6 +546,15 @@ export default function EventDetailPage() {
 
   const isRegistered = registrationStatus?.isRegistered || false;
   
+  // Check if 10 minutes have passed since registration
+  const canUnregister = () => {
+    if (!registrationStatus?.registeredAt) return false;
+    const registrationTime = new Date(registrationStatus.registeredAt).getTime();
+    const currentTime = new Date().getTime();
+    const minutesPassed = (currentTime - registrationTime) / (1000 * 60);
+    return minutesPassed < 10;
+  };
+  
   // For team events, check if user is in a team
   const isUserInTeam = event.isTeamEvent && teams.some(team => 
     team.members?.some((member: any) => member.userId === user?.id)
@@ -761,7 +778,7 @@ export default function EventDetailPage() {
                                           <div>Roll No: {reg.rollNo || 'N/A'}</div>
                                           <div>Semester: {reg.semester || 'N/A'}</div>
                                           <div>Gender: {reg.gender || 'N/A'}</div>
-                                          <div>Registered: {new Date(reg.registeredAt || reg.createdAt).toLocaleDateString()}</div>
+                                          <div>Registered: {reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A'}</div>
                                           {reg.type && <div>Type: {reg.type}</div>}
                                         </div>
                                         {(user?.role === 'super_admin' || 
@@ -1058,6 +1075,20 @@ export default function EventDetailPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{event.endTime}</p>
+                        <p className="text-sm text-muted-foreground">End Time</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{formatDate(event.endDate)}</p>
+                        <p className="text-sm text-muted-foreground">End Date</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
                       <Users className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="font-medium">{event.participantCount} / {event.capacity}</p>
@@ -1083,16 +1114,24 @@ export default function EventDetailPage() {
                         <CheckCircle className="h-5 w-5" />
                         <span className="font-medium">You're registered!</span>
                       </div>
-                      <Button
-                        variant="destructive"
-                        className="w-full btn-3d hover-elevate shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold border-0"
-                        size="lg"
-                        onClick={() => unregisterMutation.mutate()}
-                        disabled={unregisterMutation.isPending}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        {unregisterMutation.isPending ? "Unregistering..." : "Unregister from Event"}
-                      </Button>
+                      {canUnregister() ? (
+                        <Button
+                          variant="destructive"
+                          className="w-full btn-3d hover-elevate shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold border-0"
+                          size="lg"
+                          onClick={() => unregisterMutation.mutate()}
+                          disabled={unregisterMutation.isPending}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          {unregisterMutation.isPending ? "Unregistering..." : "Unregister from Event"}
+                        </Button>
+                      ) : (
+                        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
+                          <p className="text-sm text-amber-800 dark:text-amber-200">
+                            Unregister option available only within 10 minutes of registration.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ) : canRegisterEvent ? (
                     <EventRegistrationModal 
@@ -1129,6 +1168,13 @@ export default function EventDetailPage() {
                           ? `Register - ${formatCurrency(event.price || 0)}`
                           : "Register Now"}
                       </Button>
+                      {event.isPaid && (
+                        <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
+                          <p className="text-xs text-red-700 dark:text-red-300 font-medium">
+                            ⚠️ Payment is non-refundable. Please verify event details before confirming payment.
+                          </p>
+                        </div>
+                      )}
                     </EventRegistrationModal>
                   ) : (
                     <div className="text-center py-4 text-muted-foreground">
@@ -1235,19 +1281,22 @@ export default function EventDetailPage() {
                     </p>
                   </div>
 
-                  {finalCanEditEvent && (
+                  {canDeleteEvent && (
                     <>
                       <Separator />
                       <div className="flex gap-2">
-                        <Link href={`/admin/edit-event/${event.id}`} className="flex-1">
-                          <Button variant="secondary" className="w-full" size="sm">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Event
-                          </Button>
-                        </Link>
+                        {finalCanEditEvent && (
+                          <Link href={`/admin/edit-event/${event.id}`} className="flex-1">
+                            <Button variant="secondary" className="w-full" size="sm">
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Event
+                            </Button>
+                          </Link>
+                        )}
                         <Button 
                           variant="destructive" 
                           size="sm"
+                          className={finalCanEditEvent ? "" : "w-full"}
                           onClick={() => {
                             if (window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
                               apiRequest("DELETE", `/api/events/${event.id}`).then(() => {

@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface RegistrationStatusResponse {
   isRegistered: boolean;
+  registeredAt: string | null;
 }
 
 export function useRegistrationStatus(eventId: string) {
@@ -12,7 +13,7 @@ export function useRegistrationStatus(eventId: string) {
   return useQuery<RegistrationStatusResponse>({
     queryKey: ["/api/events", eventId, "check-registration"],
     queryFn: async () => {
-      if (!user) return { isRegistered: false };
+      if (!user) return { isRegistered: false, registeredAt: null };
       
       try {
         const response = await apiRequest("GET", `/api/events/${eventId}/check-registration`);
@@ -20,7 +21,7 @@ export function useRegistrationStatus(eventId: string) {
       } catch (error: any) {
         // If user is not authenticated, return false
         if (error?.status === 401) {
-          return { isRegistered: false };
+          return { isRegistered: false, registeredAt: null };
         }
         throw error;
       }

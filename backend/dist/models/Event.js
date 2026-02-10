@@ -8,13 +8,15 @@ exports.EVENT_CATEGORIES = [
     "sports", "technology", "cultural", "academic", "music",
     "art", "workshop", "competition", "social", "other"
 ];
-exports.EVENT_STATUS = ["draft", "upcoming", "ongoing", "completed", "cancelled"];
+exports.EVENT_STATUS = ["draft", "upcoming", "live", "completed", "archived", "cancelled"];
 const eventSchema = new mongoose_1.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
     category: { type: String, enum: exports.EVENT_CATEGORIES, required: true },
     date: { type: Date, required: true },
     time: { type: String, required: true },
+    endDate: { type: Date, required: true }, // End date
+    endTime: { type: String, required: true }, // End time
     location: { type: String, required: false },
     capacity: { type: Number, default: 100 },
     participantCount: { type: Number, default: 0 },
@@ -30,6 +32,8 @@ const eventSchema = new mongoose_1.Schema({
     maxTeams: { type: Number },
     maxTeamMembers: { type: Number },
     genderFixed: { type: String, enum: ['Male', 'Female', 'Other'], default: null },
+    isCancelled: { type: Boolean, default: false }, // If event was cancelled
+    archivedAt: { type: Date, default: null }, // When the event was archived (5 days after completion)
 }, { timestamps: true });
 // ADD THIS: Map _id to id for frontend
 eventSchema.virtual('id').get(function () {

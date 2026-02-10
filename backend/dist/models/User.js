@@ -20,9 +20,11 @@ const userSchema = new mongoose_1.Schema({
     },
     preference: {
         type: String,
-        enum: ['physical', 'innovative', 'both'],
-        default: 'both'
+        enum: ['physical', 'innovative'],
+        default: 'physical'
     },
+    phone: { type: String, default: undefined },
+    bio: { type: String, default: undefined },
     profileImageUrl: { type: String, default: null },
     lastLogin: { type: Date },
     // Email verification fields

@@ -95,8 +95,15 @@ export default function EventsPage() {
     .filter((event) => {
       const matchesCategory =
         selectedCategory === "all" || event.category === selectedCategory;
-      const matchesStatus =
-        statusFilter === "all" || event.status === statusFilter;
+      
+      // When "all" is selected, exclude completed and archived events
+      let matchesStatus = true;
+      if (statusFilter === "all") {
+        matchesStatus = !['completed', 'archived', 'cancelled'].includes(event.status);
+      } else {
+        matchesStatus = event.status === statusFilter;
+      }
+      
       return matchesCategory && matchesStatus;
     })
     .sort((a, b) => {
@@ -151,8 +158,9 @@ export default function EventsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="ongoing">Ongoing</SelectItem>
+                  <SelectItem value="live">Live</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>

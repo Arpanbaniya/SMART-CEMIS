@@ -1,10 +1,20 @@
+export type PaymentStatus = 'initiated' | 'pending' | 'completed' | 'failed';
+export type PaymentMethod = 'esewa' | 'other';
 export interface IPayment {
     userId: string;
     eventId: string;
     amount: number;
-    status: 'pending' | 'completed' | 'failed';
+    status: PaymentStatus;
     transactionId?: string;
-    method: string;
+    method: PaymentMethod;
+    /**
+     * eSewa verification data stored for audit trail
+     */
+    verificationData?: any;
+    /**
+     * Registration data to be used after payment is verified
+     */
+    registrationData?: any;
     emailSent?: boolean;
     createdAt: Date;
 }

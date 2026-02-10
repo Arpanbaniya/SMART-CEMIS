@@ -84,7 +84,7 @@ export function EventCard({ event }: EventCardProps) {
   const canEditEvent = user && (
     user.role === 'super_admin' || 
     (user.role === 'student_admin' && event.createdById === user.id)
-  );
+  ) && !['completed', 'archived', 'cancelled'].includes(event.status || '');
 
   const isRegistered = registrationStatus?.isRegistered || false;
 
@@ -210,7 +210,7 @@ export function EventCard({ event }: EventCardProps) {
         )}
 
         {/* Register Now button for authenticated users */}
-        {user && !canEditEvent && (
+        {user && !canEditEvent && !['completed', 'archived', 'cancelled'].includes(event.status || '') && (
           <div className="pt-3 border-t border-border/50">
             {isRegistered ? (
               <Button disabled className="w-full btn-3d bg-green-600 hover:bg-green-700">
@@ -223,7 +223,7 @@ export function EventCard({ event }: EventCardProps) {
                 eventTitle={event.title}
                 event={event}
                 isOpen={showRegistrationModal}
-                setIsOpen={setShowRegistrationModal}
+                onClose={() => setShowRegistrationModal(false)}
                 onRegistrationSuccess={() => {
                   queryClient.invalidateQueries({ queryKey: ["/api/events", event.id, "check-registration"] });
                   queryClient.invalidateQueries({ queryKey: ["/api/events", event.id] });

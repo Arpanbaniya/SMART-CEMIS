@@ -19,6 +19,8 @@ router.get('/', requireAuth_1.requireAuth, async (req, res) => {
             lastName: user.lastName,
             role: user.role,
             preference: user.preference,
+            phone: user.phone,
+            bio: user.bio,
             gender: user.gender,
             semester: user.semester,
             rollNo: user.rollNo,
@@ -41,7 +43,7 @@ router.patch('/', requireAuth_1.requireAuth, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        const allowedUpdates = ['firstName', 'lastName', 'preference', 'department', 'year'];
+        const allowedUpdates = ['firstName', 'lastName', 'preference', 'phone', 'bio', 'gender', 'semester', 'rollNo', 'programme'];
         const updates = {};
         for (const key of allowedUpdates) {
             if (req.body[key] !== undefined) {
@@ -58,6 +60,8 @@ router.patch('/', requireAuth_1.requireAuth, async (req, res) => {
             lastName: user.lastName,
             role: user.role,
             preference: user.preference,
+            phone: user.phone,
+            bio: user.bio,
             gender: user.gender,
             semester: user.semester,
             rollNo: user.rollNo,

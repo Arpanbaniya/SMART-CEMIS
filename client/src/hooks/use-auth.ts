@@ -34,8 +34,8 @@ export function useAuth() {
     queryKey: ['auth/user'],
     queryFn: fetchUser,
     retry: false,
-    staleTime: 1000 * 60 * 15, // 15 minutes - increased for better performance
-    refetchOnMount: false,
+    staleTime: 1000 * 60, // 1 minute - reduced to ensure fresh data after login
+    refetchOnMount: true, // Refetch when component mounts
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     // Don't show 401 errors as they're expected for unauthenticated users

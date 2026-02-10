@@ -65,6 +65,9 @@ export function EventRegistrationModal({
   // Validation errors
   const [nameError, setNameError] = useState("");
   const [rollNoError, setRollNoError] = useState("");
+  
+  // Payment method: only eSewa
+  const paymentMethod = 'esewa';
 
   // Team selection handler
   const handleTeamSelected = (teamName: string, creating: boolean) => {
@@ -311,6 +314,64 @@ export function EventRegistrationModal({
         registrationData.teamName = selectedTeam;
       }
 
+      // If event is paid, go through payment flow
+      if (event.isPaid && event.price && event.price > 0) {
+        try {
+          // === eSEWA PAYMENT FLOW ===
+          console.log("🚀 Initiating eSewa payment...");
+          
+          const esewaResponse = await apiRequest("POST", "/api/payment/esewa/initiate", { 
+            eventId,
+            registrationData
+          });
+
+          console.log("✅ eSewa form data received:", esewaResponse);
+
+          // Create a hidden form and submit it to eSewa
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = esewaResponse.formUrl;
+          
+          Object.entries(esewaResponse.formData).forEach(([key, value]) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = String(value);
+            form.appendChild(input);
+          });
+
+          document.body.appendChild(form);
+          console.log("📤 Submitting eSewa form to:", esewaResponse.formUrl);
+          form.submit();
+          
+          // Form submission redirects to eSewa, so we return here
+          setIsLoading(false);
+          return;
+        } catch (paymentError: any) {
+          console.error("❌ Error during payment initiation:", paymentError);
+          console.error("❌ Error message:", paymentError?.message);
+          console.error("❌ Error name:", paymentError?.name);
+          console.error("❌ Error details:", JSON.stringify(paymentError, null, 2));
+          console.error("❌ Error full object:", paymentError);
+          
+          let errorMsg = "Could not start the payment process. ";
+          if (paymentError?.message) {
+            errorMsg += paymentError.message;
+          } else {
+            errorMsg += "Please try again.";
+          }
+          
+          toast({
+            title: "Payment Initialization Failed",
+            description: errorMsg,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Free events or zero-price events: direct registration (existing behavior)
       const result = await apiRequest("POST", `/api/events/${eventId}/register`, registrationData);
 
       console.log('Registration successful:', result);
@@ -327,7 +388,9 @@ export function EventRegistrationModal({
       onSuccess?.();
       toast({
         title: "Registration Successful!",
-        description: `You have been registered for this event${event.isTeamEvent ? ` as part of team ${selectedTeam}` : ""}.`,
+        description: `You have been registered for this event${
+          event.isTeamEvent ? ` as part of team ${selectedTeam}` : ""
+        }.`,
       });
       setIsLoading(false);
       onClose();
@@ -682,6 +745,13 @@ export function EventRegistrationModal({
                   )}
                 </div>
               </div>
+
+              {event.isPaid && event.price && event.price > 0 && (
+                <div className="space-y-2 border-t pt-4 text-sm text-muted-foreground">
+                  <Label>Payment Method</Label>
+                  <div>📱 eSewa</div>
+                </div>
+              )}
             </>
           )}
 

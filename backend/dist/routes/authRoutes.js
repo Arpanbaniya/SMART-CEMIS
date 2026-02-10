@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
                     firstName: 'Super',
                     lastName: 'Admin',
                     role: 'super_admin',
-                    preference: 'both',
+                    preference: 'physical',
                     isVerified: true // Super admin is auto-verified
                 });
                 await user.save();
@@ -160,7 +160,7 @@ router.post('/register', async (req, res) => {
             firstName,
             lastName,
             role: 'user',
-            preference: preference || 'both',
+            preference: preference || 'physical',
             profileImageUrl: null,
             isVerified: false, // New users are not verified
             verificationToken: hashed, // Store hashed token

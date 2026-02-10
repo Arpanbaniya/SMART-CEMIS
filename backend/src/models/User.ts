@@ -8,7 +8,9 @@ export interface IUser {
   lastName: string | null;
   gender?: 'male' | 'female' | 'other';
   role: 'user' | 'student_admin' | 'super_admin';
-  preference: 'physical' | 'innovative' | 'both';
+  preference: 'physical' | 'innovative';
+  phone?: string;
+  bio?: string;
   profileImageUrl?: string | null;
   lastLogin?: Date;
   // Email verification fields
@@ -41,9 +43,11 @@ const userSchema = new Schema<IUser>({
   },
   preference: { 
     type: String, 
-    enum: ['physical', 'innovative', 'both'],
-    default: 'both'
+    enum: ['physical', 'innovative'],
+    default: 'physical'
   },
+  phone: { type: String, default: undefined },
+  bio: { type: String, default: undefined },
   profileImageUrl: { type: String, default: null },
   lastLogin: { type: Date },
   // Email verification fields

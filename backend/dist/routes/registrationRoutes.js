@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setBroadcastFunction = setBroadcastFunction;
 // backend/src/routes/registrationRoutes.ts
@@ -8,6 +41,7 @@ const Registration_1 = require("../models/Registration");
 const Event_1 = require("../models/Event");
 const User_1 = require("../models/User");
 const Team_1 = require("../models/Team");
+const eventStatus_1 = require("../utils/eventStatus");
 const router = (0, express_1.Router)();
 // Helper function to broadcast event updates (injected from server)
 let broadcastEventUpdate;
@@ -33,7 +67,32 @@ router.get('/:userId/registrations', requireAuth_1.requireAuth, async (req, res)
         const registrations = await Registration_1.Registration.find({ userId })
             .populate('eventId')
             .sort({ registeredAt: -1 });
-        res.json(registrations.map(reg => reg.toJSON()));
+        // Compute event status dynamically
+        const registrationsWithStatus = registrations.map(reg => {
+            const regJson = reg.toJSON();
+            if (regJson.eventId && typeof regJson.eventId === 'object') {
+                const event = regJson.eventId;
+                if (event && event.date && event.endDate) {
+                    const computedStatus = (0, eventStatus_1.computeEventStatus)({
+                        isCancelled: event.isCancelled || false,
+                        archivedAt: event.archivedAt || null,
+                        date: new Date(event.date),
+                        time: event.time,
+                        endDate: new Date(event.endDate),
+                        endTime: event.endTime,
+                    });
+                    return {
+                        ...regJson,
+                        eventId: {
+                            ...event,
+                            status: computedStatus,
+                        }
+                    };
+                }
+            }
+            return regJson;
+        });
+        res.json(registrationsWithStatus);
     }
     catch (error) {
         console.error('Fetch registrations error:', error);
@@ -170,6 +229,33 @@ router.post('/:eventId/register', requireAuth_1.requireAuth, async (req, res) =>
             console.log('Event is full, blocking registration');
             return res.status(400).json({ error: 'Event is full' });
         }
+        // For paid events, ensure a completed payment exists before allowing registration
+        if (event.isPaid && event.price && event.price > 0) {
+            try {
+                const { Payment } = await Promise.resolve().then(() => __importStar(require('../models/payment')));
+                const completedPayment = await Payment.findOne({
+                    userId,
+                    eventId: event._id.toString(),
+                    status: 'completed'
+                });
+                if (!completedPayment) {
+                    console.log('No completed payment found for paid event, blocking registration', {
+                        userId,
+                        eventId
+                    });
+                    return res.status(402).json({
+                        error: 'PAYMENT_REQUIRED',
+                        message: 'Payment is required before registering for this event.'
+                    });
+                }
+            }
+            catch (paymentError) {
+                console.error('Error checking payment status for registration:', paymentError);
+                return res.status(500).json({
+                    error: 'Failed to verify payment status for this event'
+                });
+            }
+        }
         // Create registration with detailed student information
         console.log('Creating registration with data:', {
             userId,
@@ -231,10 +317,10 @@ router.post('/:eventId/register', requireAuth_1.requireAuth, async (req, res) =>
         }
         // Update event participant count
         try {
-            await Event_1.Event.findByIdAndUpdate(eventId, {
+            const updatedEvent = await Event_1.Event.findByIdAndUpdate(eventId, {
                 $inc: { participantCount: 1 }
-            });
-            console.log('Event participant count updated successfully');
+            }, { new: true });
+            console.log('✅ Event participant count updated. New count:', updatedEvent?.participantCount);
         }
         catch (error) {
             console.error('Error updating event participant count:', error);
@@ -418,7 +504,10 @@ router.get('/:eventId/check-registration', requireAuth_1.requireAuth, async (req
             userId,
             eventId,
         });
-        res.json({ isRegistered: !!registration });
+        res.json({
+            isRegistered: !!registration,
+            registeredAt: registration?.registeredAt || null
+        });
     }
     catch (error) {
         console.error('Check registration error:', error);

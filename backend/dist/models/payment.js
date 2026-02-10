@@ -9,11 +9,18 @@ const paymentSchema = new mongoose_1.Schema({
     amount: { type: Number, required: true },
     status: {
         type: String,
-        enum: ['pending', 'completed', 'failed'],
-        default: 'pending'
+        enum: ['initiated', 'pending', 'completed', 'failed'],
+        default: 'initiated'
     },
     transactionId: { type: String },
-    method: { type: String, required: true },
+    method: {
+        type: String,
+        enum: ['esewa', 'other'],
+        default: 'esewa',
+        required: true
+    },
+    verificationData: { type: mongoose_1.Schema.Types.Mixed },
+    registrationData: { type: mongoose_1.Schema.Types.Mixed },
     emailSent: { type: Boolean, default: false }
 }, { timestamps: true });
 exports.Payment = (0, mongoose_1.model)('Payment', paymentSchema);

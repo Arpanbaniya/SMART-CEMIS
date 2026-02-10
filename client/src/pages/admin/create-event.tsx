@@ -26,11 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Calendar, MapPin, Clock, Users, DollarSign, Trophy, Image } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Clock, Users, DollarSign, Trophy, Image, Wand2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EVENT_CATEGORIES } from "@/lib/constants";
+import { AIDescriptionModal } from "@/components/AIDescriptionModal";
 
 const createEventSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
@@ -38,6 +39,8 @@ const createEventSchema = z.object({
   category: z.enum(EVENT_CATEGORIES, { message: "Please select a valid category" }),
   date: z.string().min(1, "Please select a date"),
   time: z.string().min(1, "Please enter a time"),
+  endDate: z.string().min(1, "Please select an end date"),
+  endTime: z.string().min(1, "Please enter event end time"),
   location: z.string().min(1, "Location is required"),
   imageUrl: z.string().optional().or(z.literal("")).refine((val) => {
     if (!val || val === "") return true;
@@ -92,6 +95,7 @@ export default function CreateEventPage() {
   const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(createEventSchema),
@@ -101,6 +105,8 @@ export default function CreateEventPage() {
       category: "other",
       date: "",
       time: "",
+      endDate: "",
+      endTime: "",
       location: "",
       imageUrl: "",
       mapUrl: "",
@@ -117,7 +123,8 @@ export default function CreateEventPage() {
     mutationFn: async (data: any) => {
       return apiRequest("POST", "/api/events", {
         ...data,
-        date: new Date(data.date).toISOString(),
+        date: new Date(`${data.date}T${data.time}`).toISOString(),
+        endDate: new Date(`${data.endDate}T${data.endTime}`).toISOString(),
         createdById: user?.id,
         status: "upcoming",
       });
@@ -166,6 +173,7 @@ export default function CreateEventPage() {
   const onSubmit = (data: any) => {
     // Validate that date and time are not in the past
     const selectedDate = new Date(data.date);
+    const selectedEndDate = new Date(data.endDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -176,6 +184,33 @@ export default function CreateEventPage() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Validate that endDate is same as or after start date
+    if (selectedEndDate < selectedDate) {
+      toast({
+        title: "Invalid End Date",
+        description: "End date must be the same as or after the start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If dates are the same, endTime must be after startTime
+    if (selectedDate.getTime() === selectedEndDate.getTime()) {
+      const [startHours, startMinutes] = data.time.split(':').map(Number);
+      const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+      const startTimeMinutes = startHours * 60 + startMinutes;
+      const endTimeMinutes = endHours * 60 + endMinutes;
+      
+      if (endTimeMinutes <= startTimeMinutes) {
+        toast({
+          title: "Invalid End Time",
+          description: "End time must be after the start time for same-day events.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     // If date is today, validate time
@@ -295,7 +330,19 @@ export default function CreateEventPage() {
                       name="description"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-base font-semibold">Event Description</FormLabel>
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="text-base font-semibold">Event Description</FormLabel>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAIModalOpen(true)}
+                              className="hover-elevate"
+                            >
+                              <Wand2 className="h-4 w-4 mr-2" />
+                              ✨ AI Assist
+                            </Button>
+                          </div>
                           <FormControl>
                             <Textarea
                               placeholder="Describe your event in detail..."
@@ -358,7 +405,54 @@ export default function CreateEventPage() {
                           </FormItem>
                         )}
                       />
-                    </div>
+                      <FormField
+                        control={form.control}
+                        name="endTime"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-base font-semibold flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-primary" />
+                              End Time
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="time" 
+                                {...field} 
+                                data-testid="input-event-end-time"
+                                className="input-3d h-12 text-base"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => {
+                          const today = new Date().toISOString().split('T')[0];
+                          
+                          return (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-base font-semibold flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-primary" />
+                                End Date
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="date" 
+                                  {...field} 
+                                  min={today}
+                                  data-testid="input-event-end-date"
+                                  className="input-3d h-12 text-base"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
+                      />                    </div>
 
                     <FormField
                       control={form.control}
@@ -661,6 +755,13 @@ export default function CreateEventPage() {
                   </div>
                 </form>
               </Form>
+              <AIDescriptionModal
+                isOpen={isAIModalOpen}
+                onClose={() => setIsAIModalOpen(false)}
+                title={form.watch("title")}
+                currentDescription={form.watch("description")}
+                onApply={(text) => form.setValue("description", text)}
+              />
             </CardContent>
           </Card>
         </div>

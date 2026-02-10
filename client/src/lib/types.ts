@@ -21,6 +21,8 @@ export interface Event {
   category: "sports" | "technology" | "cultural" | "academic" | "music" | "art" | "workshop" | "competition" | "social" | "other";
   date: string;
   time: string;
+  endDate: string; // When the event ends (date)
+  endTime: string; // When the event ends (time, HH:mm format)
   location: string;
   capacity: number;
   participantCount: number;
@@ -28,13 +30,15 @@ export interface Event {
   price: number;
   isSportsEvent: boolean;
   tournamentType?: string;
-  status: "draft" | "upcoming" | "ongoing" | "completed" | "cancelled";
+  status: "draft" | "upcoming" | "live" | "completed" | "archived" | "cancelled";
   createdById: string;
   imageUrl?: string;
   mapUrl?: string;
   isTeamEvent?: boolean;
   maxTeams?: number;
   genderFixed?: 'Male' | 'Female' | 'Other' | null;
+  isCancelled?: boolean; // If event was cancelled
+  archivedAt?: string; // When the event was archived
   createdAt: string;
   updatedAt: string;
   created_at: string;
@@ -110,8 +114,6 @@ export interface Payment {
   status: 'pending' | 'completed' | 'failed';
   transactionId?: string;
   method: string;
-  khaltiToken?: string;
-  khaltiTransactionId?: string;
   failureReason?: string;
   user?: {
     id: string;
@@ -128,13 +130,20 @@ export interface Payment {
 
 export interface UserProfile {
   id: string;
-  userId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
   role: 'user' | 'student_admin' | 'super_admin';
-  preference: 'physical' | 'innovative' | 'both';
+  preference: 'physical' | 'innovative';
   phone?: string;
   bio?: string;
+  gender?: 'male' | 'female' | 'other';
+  semester?: number;
+  rollNo?: string;
+  programme?: string;
+  profileImageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export type UserPreference = 'physical' | 'innovative' | 'both';
+export type UserPreference = 'physical' | 'innovative';

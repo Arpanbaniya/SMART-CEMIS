@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -34,6 +67,8 @@ const logsRoutes_1 = __importDefault(require("./routes/logsRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
 const teamRoutes_1 = __importDefault(require("./routes/teamRoutes"));
 const tournamentRoutes_1 = __importDefault(require("./routes/tournamentRoutes"));
+const recommendationRoutes_1 = __importDefault(require("./routes/recommendationRoutes"));
+const descriptionRoutes_1 = __importDefault(require("./routes/descriptionRoutes"));
 // Verify critical environment variables
 if (!process.env.OPENAI_API_KEY) {
     console.warn('⚠️  WARNING: OPENAI_API_KEY is not configured. Sentiment analysis features will be limited to rating-based analysis only.');
@@ -112,9 +147,34 @@ app.use((0, express_session_1.default)({
 }));
 // Database connection with retry logic
 mongoose_1.default.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/myevent')
-    .then(() => {
+    .then(async () => {
     console.log('✅ Connected to MongoDB successfully');
     console.log(`📊 Database: ${process.env.MONGODB_URI || 'mongodb://localhost:27017/myevent'}`);
+    // Auto-recalculate participant counts on startup to fix any inconsistencies
+    try {
+        const Event = (await Promise.resolve().then(() => __importStar(require('./models/Event')))).Event;
+        const Registration = (await Promise.resolve().then(() => __importStar(require('./models/Registration')))).Registration;
+        const events = await Event.find();
+        let mismatches = 0;
+        for (const event of events) {
+            const actualCount = await Registration.countDocuments({ eventId: event._id.toString() });
+            if (event.participantCount !== actualCount) {
+                await Event.findByIdAndUpdate(event._id, { participantCount: actualCount });
+                console.log(`📊 Fixed participant count for "${event.title}": ${event.participantCount} → ${actualCount}`);
+                mismatches++;
+            }
+        }
+        if (mismatches > 0) {
+            console.log(`⚠️  Fixed ${mismatches} participant count mismatch(es)`);
+        }
+        else {
+            console.log('✅ All participant counts are consistent');
+        }
+    }
+    catch (error) {
+        console.error('⚠️  Error during participant count verification:', error);
+        // Don't fail startup if this fails
+    }
 })
     .catch(err => {
     console.error('❌ MongoDB connection error:', err);
@@ -264,9 +324,15 @@ app.use('/api/admin', adminRequestRoutes_1.default);
 app.use('/api/favorites', favoriteRoutes_1.default);
 app.use('/api/ai', aiRoutes_1.default);
 app.use('/api/profile', profileRoutes_1.default);
-app.use('/api/admin/payments', paymentRoutes_1.default);
+// Public payment endpoints (initiate / verify) and admin payment management
+app.use('/api/payment', paymentRoutes_1.default); // /initiate, /verify
+app.use('/api/admin/payments', paymentRoutes_1.default); // admin listing, preview, resend
 app.use('/api/admin/logs', logsRoutes_1.default);
 app.use('/api/analytics', analyticsRoutes_1.default);
+// ML Recommendation endpoints
+app.use('/api/recommendations', recommendationRoutes_1.default);
+// AI Description Generator endpoints
+app.use('/api/descriptions', descriptionRoutes_1.default);
 // Enhanced health check endpoint
 app.get('/health', (req, res) => {
     const healthStatus = {

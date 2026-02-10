@@ -11,19 +11,21 @@ export const createEventSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   category: z.enum(EVENT_CATEGORIES, { message: 'Invalid category' }),
-  date: z.string().min(1, 'Date is required'), // Fix: frontend sends date string like "2024-12-31"
+  date: z.string().min(1, 'Date is required'), // Frontend sends date string like "2024-12-31"
   time: z.string().min(1, 'Time is required'),
+  endDate: z.string().min(1, 'End date is required'), // When event ends (date)
+  endTime: z.string().min(1, 'End time is required'), // When event ends (time)
   location: z.string().min(1, 'Location is required'),
-  imageUrl: z.string().url().optional().or(z.literal('')), // Add image URL field
-  mapUrl: z.string().url().optional().or(z.literal('')), // Add missing field
+  imageUrl: z.string().url().optional().or(z.literal('')),
+  mapUrl: z.string().url().optional().or(z.literal('')),
   capacity: z.number().int().min(1).default(100),
   isPaid: z.boolean().default(false),
   price: z.number().int().min(0).default(0),
-  isSportsEvent: z.boolean().default(false), // Add missing field
-  isTeamEvent: z.boolean().default(false), // Add team event field
-  maxTeams: z.number().int().min(1).optional(), // Add max teams field
-  maxTeamMembers: z.number().int().min(1).optional(), // Add max team members field
-  tournamentType: z.string().optional(), // Add missing field
-  createdById: z.string().optional(), // Add createdById field (frontend sends this)
-  status: z.string().optional(), // Add status field (frontend sends this)
+  isSportsEvent: z.boolean().default(false),
+  isTeamEvent: z.boolean().default(false),
+  maxTeams: z.number().int().min(1).optional(),
+  maxTeamMembers: z.number().int().min(1).optional(),
+  tournamentType: z.string().optional(),
+  createdById: z.string().optional(),
+  status: z.string().optional(),
 });
