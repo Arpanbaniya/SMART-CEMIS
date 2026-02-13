@@ -7,6 +7,7 @@ import { createEventSchema } from '../validation/eventValidation';
 import { logEventCreation, logEventUpdate, logEventDeletion, extractRequestMetadata } from '../utils/logger';
 import { getTrendingEvents, getTrendingEventsWithScores } from '../services/trendingService';
 import { computeEventStatus } from '../utils/eventStatus';
+import { sendEventUpdateNotification, sendEventCancellationNotification } from '../services/emailNotificationService';
 
 // Extend Express Request interface with all required properties
 interface ExtendedRequest extends Express.Request {
@@ -300,7 +301,7 @@ router.get('/', async (req, res) => {
 router.get('/trending', async (req, res) => {
   try {
     console.log('[Trending API] Request received');
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 5;
     console.log(`[Trending API] Fetching with limit: ${limit}`);
     const events = await getTrendingEvents(limit);
     console.log(`[Trending API] Returning ${events.length} events`);
@@ -473,6 +474,7 @@ router.patch('/:id', requireAuth, canModifyEvent, async (req, res) => {
 
     // Track changes for logging
     const changes: string[] = [];
+    const changesObject: Record<string, { old: any; new: any }> = {};
     const oldData = { ...event.toObject() };
 
     Object.assign(event, updateData);
@@ -496,6 +498,7 @@ router.patch('/:id', requireAuth, canModifyEvent, async (req, res) => {
       const newValue = updateData[key];
       if (oldValue !== newValue) {
         changes.push(`${key}: ${oldValue} → ${newValue}`);
+        changesObject[key] = { old: oldValue, new: newValue };
       }
     }
     
@@ -507,6 +510,16 @@ router.patch('/:id', requireAuth, canModifyEvent, async (req, res) => {
       changes,
       extractRequestMetadata(req)
     );
+
+    // Send email notification to registered participants if there are significant changes
+    try {
+      if (changes.length > 0) {
+        await sendEventUpdateNotification(event._id.toString(), changesObject);
+      }
+    } catch (error) {
+      console.error('Failed to send update notification emails:', error);
+      // Don't fail the update if email fails
+    }
 
     // Return updated event with computed status
     const json = event.toJSON();
@@ -546,6 +559,14 @@ router.delete('/:id', requireAuth, canModifyEvent, async (req, res) => {
     // Store event details for logging before deletion
     const eventTitle = event.title;
     const eventId = event._id.toString();
+    
+    // Send cancellation notification to registered participants BEFORE deletion
+    try {
+      await sendEventCancellationNotification(eventId);
+    } catch (error) {
+      console.error('Failed to send cancellation notification emails:', error);
+      // Don't fail the deletion if email fails
+    }
     
     await Event.findByIdAndDelete(req.params.id);
     

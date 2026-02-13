@@ -14,6 +14,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,6 +38,8 @@ import {
   Award,
   Edit2,
   Save,
+  Send,
+  Loader,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +53,12 @@ export default function ProfilePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [showChangeEmailDialog, setShowChangeEmailDialog] = useState(false);
+  const [emailChangeForm, setEmailChangeForm] = useState({
+    newEmail: '',
+    password: ''
+  });
   const [editForm, setEditForm] = useState<{
     phone: string;
     bio: string;
@@ -97,6 +114,30 @@ export default function ProfilePage() {
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const emailChangeMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", `/api/email-change/request`, {
+        newEmail: emailChangeForm.newEmail,
+        password: emailChangeForm.password
+      });
+    },
+    onSuccess: (response) => {
+      toast({
+        title: "Verification Email Sent",
+        description: `A verification link has been sent to ${emailChangeForm.newEmail}. Check your inbox to confirm the change.`,
+      });
+      setShowChangeEmailDialog(false);
+      setEmailChangeForm({ newEmail: '', password: '' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to request email change. Please try again.",
         variant: "destructive",
       });
     },
@@ -306,15 +347,25 @@ export default function ProfilePage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input
-                      placeholder="Your email"
-                      value={profile?.email || ""}
-                      disabled={true}
-                      data-testid="input-email"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Email verification will be required to change your email address. Coming soon.
-                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Your email"
+                        value={profile?.email || ""}
+                        disabled={true}
+                        data-testid="input-email"
+                        className="flex-1"
+                      />
+                      {profile?.role !== 'super_admin' && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowChangeEmailDialog(true)}
+                          className="whitespace-nowrap"
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Change Email
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Phone Number</Label>
@@ -369,6 +420,90 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </main>
+
+      {/* Email Change Dialog */}
+      <AlertDialog open={showChangeEmailDialog} onOpenChange={setShowChangeEmailDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Email Address</AlertDialogTitle>
+            <AlertDialogDescription>
+              We'll send a verification link to your new email address. You must verify it to complete the change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-email">New Email Address</Label>
+              <Input
+                id="new-email"
+                type="email"
+                placeholder="Enter your new email"
+                value={emailChangeForm.newEmail}
+                onChange={(e) =>
+                  setEmailChangeForm({
+                    ...emailChangeForm,
+                    newEmail: e.target.value,
+                  })
+                }
+                disabled={emailChangeMutation.isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Your Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={emailChangeForm.password}
+                onChange={(e) =>
+                  setEmailChangeForm({
+                    ...emailChangeForm,
+                    password: e.target.value,
+                  })
+                }
+                disabled={emailChangeMutation.isPending}
+              />
+              <p className="text-xs text-muted-foreground">
+                We need your password to confirm this change for security.
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> A verification email will be sent to your new address. You'll have 30 minutes to verify the change.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <AlertDialogCancel disabled={emailChangeMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => emailChangeMutation.mutate()}
+              disabled={
+                emailChangeMutation.isPending ||
+                !emailChangeForm.newEmail ||
+                !emailChangeForm.password
+              }
+              className="bg-primary"
+            >
+              {emailChangeMutation.isPending ? (
+                <>
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Verification Email
+                </>
+              )}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Footer />
       <Chatbot />

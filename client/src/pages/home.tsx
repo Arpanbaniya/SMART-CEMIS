@@ -48,7 +48,7 @@ export default function Home() {
   const { data: trendingEvents = [], isLoading: trendingLoading } = useQuery<Event[]>({
     queryKey: ["/api/events/trending"],
     queryFn: async () => {
-      const response = await fetch("/api/events/trending?limit=10", {
+      const response = await fetch("/api/events/trending?limit=5", {
         credentials: "include",
       });
       if (!response.ok) {
@@ -62,7 +62,7 @@ export default function Home() {
   const trendingEventsList = [...events]
     .filter(event => !['completed', 'archived', 'cancelled'].includes(event.status))
     .sort((a, b) => (b.participantCount || 0) - (a.participantCount || 0))
-    .slice(0, 10);
+    .slice(0, 5);
 
   // Recommended: Get ML recommendations from backend
   const { data: recommendationsData, isLoading: recommendationsLoading } = useQuery({
@@ -70,7 +70,7 @@ export default function Home() {
     queryFn: async () => {
       if (!user?.id) return null;
       try {
-        const response = await fetch(`/api/recommendations/${user.id}?limit=3`, {
+        const response = await fetch(`/api/recommendations/${user.id}?limit=5`, {
           credentials: "include",
         });
         if (!response.ok) throw new Error("Failed to fetch recommendations");
@@ -88,7 +88,7 @@ export default function Home() {
     ? recommendationsData.data.recommendations
         .map(rec => events.find(e => e.id === rec.eventId))
         .filter((e): e is Event => e !== undefined)
-        .slice(0, 3)
+        .slice(0, 5)
     : [];
 
   // All events: Filtered by search only, and exclude completed/archived

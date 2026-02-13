@@ -56,7 +56,7 @@ const vectorizer_1 = require("./vectorizer");
  * Train content-based model on a user
  * Returns top recommendations
  */
-async function getContentBasedRecommendations(userId, limit = 3) {
+async function getContentBasedRecommendations(userId, limit = 5) {
     try {
         console.log(`[ContentBased] Training for user ${userId}, limit: ${limit}`);
         // Get user vector

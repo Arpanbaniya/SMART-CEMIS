@@ -83,7 +83,7 @@ async function getUserSimilarity(userId, otherUserIds) {
  * Get collaborative filtering recommendations
  * Based on what similar users engaged with
  */
-async function getCollaborativeRecommendations(userId, limit = 3) {
+async function getCollaborativeRecommendations(userId, limit = 5) {
     try {
         console.log(`[Collaborative] Generating recommendations for ${userId}`);
         const { Registration } = await Promise.resolve().then(() => __importStar(require('../../models/Registration')));

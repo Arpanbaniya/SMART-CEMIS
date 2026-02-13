@@ -42,6 +42,7 @@ const Event_1 = require("../models/Event");
 const User_1 = require("../models/User");
 const Team_1 = require("../models/Team");
 const eventStatus_1 = require("../utils/eventStatus");
+const emailNotificationService_1 = require("../services/emailNotificationService");
 const router = (0, express_1.Router)();
 // Helper function to broadcast event updates (injected from server)
 let broadcastEventUpdate;
@@ -346,6 +347,19 @@ router.post('/:eventId/register', requireAuth_1.requireAuth, async (req, res) =>
             console.log('broadcastEventUpdate function is not available');
         }
         res.status(201).json(registration.toJSON());
+        // Send registration confirmation email asynchronously (don't wait for it)
+        // Note: Intentionally not awaiting - registration succeeds even if email fails
+        setImmediate(async () => {
+            try {
+                const isPaid = event.isPaid && event.price && event.price > 0;
+                console.log(`📧 Sending ${isPaid ? 'PAID' : 'FREE'} event registration confirmation email to: ${user.email}`);
+                await (0, emailNotificationService_1.sendRegistrationConfirmationEmail)(userId, eventId, isPaid);
+            }
+            catch (emailError) {
+                // Silently log - registration already succeeded
+                console.error('Error sending registration confirmation email:', emailError);
+            }
+        });
     }
     catch (error) {
         console.error('Register for event error:', error);

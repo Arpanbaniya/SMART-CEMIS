@@ -240,27 +240,50 @@ router.get('/engagement', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
+    const Feedback = (await import('../models/Feedback')).Feedback;
+    
+    // Total counts
     const totalUsers = await User.countDocuments();
+    const totalRegistrations = await Registration.countDocuments();
+    const totalFeedback = await Feedback.countDocuments();
     const activeUsers = await User.countDocuments({
       lastLogin: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
     });
-    
-    const Feedback = (await import('../models/Feedback')).Feedback;
-    const totalFeedback = await Feedback.countDocuments();
-    const feedbackResponseRate = totalUsers > 0 ? (totalFeedback / totalUsers * 100).toFixed(1) : '0';
 
-    const totalRegistrations = await Registration.countDocuments();
-    const avgRegistrationsPerEvent = await Event.countDocuments() > 0 
-      ? (totalRegistrations / await Event.countDocuments()).toFixed(1)
+    // Average Registration Rate = (Total Registrations / Total Event Capacity) * 100
+    const eventsWithCapacity = await Event.find({}, { capacity: 1 });
+    const totalCapacity = eventsWithCapacity.reduce((sum, event) => sum + (event.capacity || 0), 0);
+    const avgRegistrationRate = totalCapacity > 0 
+      ? (totalRegistrations / totalCapacity * 100).toFixed(1)
+      : '0';
+
+    // Feedback Response Rate = (Total Feedback / Total Registrations) * 100
+    const feedbackResponseRate = totalRegistrations > 0
+      ? (totalFeedback / totalRegistrations * 100).toFixed(1)
+      : '0';
+
+    // Repeat Participant Rate = (Users with 2+ registrations / Total Users) * 100
+    const userRegistrationCounts = await Registration.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    const repeatUsers = userRegistrationCounts.filter(u => u.count >= 2).length;
+    const repeatParticipantRate = totalUsers > 0
+      ? (repeatUsers / totalUsers * 100).toFixed(1)
       : '0';
 
     res.json({
       totalUsers,
       activeUsers,
-      totalFeedback,
-      feedbackResponseRate: parseFloat(feedbackResponseRate),
       totalRegistrations,
-      avgRegistrationsPerEvent: parseFloat(avgRegistrationsPerEvent)
+      totalFeedback,
+      avgRegistrationRate: parseFloat(avgRegistrationRate),
+      feedbackResponseRate: parseFloat(feedbackResponseRate),
+      repeatParticipantRate: parseFloat(repeatParticipantRate)
     });
 
   } catch (error) {

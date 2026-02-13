@@ -1,0 +1,2 @@
+cd c:\Users\nepal\Desktop\project\a\myevent\backend
+node trigger-training.js

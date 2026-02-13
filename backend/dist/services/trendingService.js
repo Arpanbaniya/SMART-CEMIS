@@ -30,10 +30,10 @@ function calculateTrendingScore(event) {
 /**
  * Get trending events (global, same for all users)
  *
- * @param limit - Number of events to return (default: 10)
+ * @param limit - Number of events to return (default: 5)
  * @returns Array of trending events sorted by score
  */
-async function getTrendingEvents(limit = 10) {
+async function getTrendingEvents(limit = 5) {
     try {
         // Get all non-cancelled, non-archived events
         // Filter based on timestamps instead of stored status

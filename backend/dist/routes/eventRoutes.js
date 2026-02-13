@@ -42,6 +42,7 @@ const eventValidation_1 = require("../validation/eventValidation");
 const logger_1 = require("../utils/logger");
 const trendingService_1 = require("../services/trendingService");
 const eventStatus_1 = require("../utils/eventStatus");
+const emailNotificationService_1 = require("../services/emailNotificationService");
 const router = (0, express_1.Router)();
 // Middleware to check if user can modify event (super_admin or student_admin who created it)
 const canModifyEvent = async (req, res, next) => {
@@ -295,7 +296,7 @@ router.get('/', async (req, res) => {
 router.get('/trending', async (req, res) => {
     try {
         console.log('[Trending API] Request received');
-        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 5;
         console.log(`[Trending API] Fetching with limit: ${limit}`);
         const events = await (0, trendingService_1.getTrendingEvents)(limit);
         console.log(`[Trending API] Returning ${events.length} events`);
@@ -455,6 +456,7 @@ router.patch('/:id', requireAuth_1.requireAuth, canModifyEvent, async (req, res)
         // endTime and time remain as HH:mm format strings
         // Track changes for logging
         const changes = [];
+        const changesObject = {};
         const oldData = { ...event.toObject() };
         Object.assign(event, updateData);
         await event.save();
@@ -476,10 +478,21 @@ router.patch('/:id', requireAuth_1.requireAuth, canModifyEvent, async (req, res)
             const newValue = updateData[key];
             if (oldValue !== newValue) {
                 changes.push(`${key}: ${oldValue} → ${newValue}`);
+                changesObject[key] = { old: oldValue, new: newValue };
             }
         }
         // Log the event update
         await (0, logger_1.logEventUpdate)(req.session.userId, event._id.toString(), event.title, changes, (0, logger_1.extractRequestMetadata)(req));
+        // Send email notification to registered participants if there are significant changes
+        try {
+            if (changes.length > 0) {
+                await (0, emailNotificationService_1.sendEventUpdateNotification)(event._id.toString(), changesObject);
+            }
+        }
+        catch (error) {
+            console.error('Failed to send update notification emails:', error);
+            // Don't fail the update if email fails
+        }
         // Return updated event with computed status
         const json = event.toJSON();
         const computedStatus = (0, eventStatus_1.computeEventStatus)({
@@ -516,6 +529,14 @@ router.delete('/:id', requireAuth_1.requireAuth, canModifyEvent, async (req, res
         // Store event details for logging before deletion
         const eventTitle = event.title;
         const eventId = event._id.toString();
+        // Send cancellation notification to registered participants BEFORE deletion
+        try {
+            await (0, emailNotificationService_1.sendEventCancellationNotification)(eventId);
+        }
+        catch (error) {
+            console.error('Failed to send cancellation notification emails:', error);
+            // Don't fail the deletion if email fails
+        }
         await Event_1.Event.findByIdAndDelete(req.params.id);
         // Broadcast real-time update to all connected clients
         try {

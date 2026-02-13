@@ -4,7 +4,45 @@ import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 
 // ⚠️ CRITICAL: Load environment variables FIRST before importing anything else
+// Suppress dotenv tips and warnings for cleaner startup
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+const originalStderrWrite = process.stderr.write.bind(process.stderr);
+
+let suppressDotenv = true;
+
+const tempLog = (msg: any) => {
+  const msgStr = String(msg);
+  if (suppressDotenv && (msgStr.includes('[dotenv') || msgStr.includes('tip:') || msgStr.includes('prevent') || msgStr.includes('audit secrets'))) {
+    return;
+  }
+  originalLog(msg);
+};
+
+const tempWarn = (msg: any) => {
+  const msgStr = String(msg);
+  if (suppressDotenv && (msgStr.includes('[dotenv') || msgStr.includes('tip:') || msgStr.includes('prevent') || msgStr.includes('audit secrets'))) {
+    return;
+  }
+  originalWarn(msg);
+};
+
+process.stdout.write = function(str: any) {
+  const msgStr = String(str);
+  if (suppressDotenv && (msgStr.includes('[dotenv') || msgStr.includes('tip:') || msgStr.includes('audit secrets'))) {
+    return true;
+  }
+  return originalStdoutWrite(str);
+};
+
+console.log = tempLog;
+console.warn = tempWarn;
 dotenv.config();
+console.log = originalLog;
+console.warn = originalWarn;
+process.stdout.write = originalStdoutWrite;
+suppressDotenv = false;
 
 import cors from 'cors';
 import helmet from 'helmet';
@@ -23,6 +61,7 @@ import feedbackRoutes from './routes/feedbackRoutes';
 import favoriteRoutes from './routes/favoriteRoutes';
 import aiRoutes from './routes/aiRoutes';
 import profileRoutes from './routes/profileRoutes';
+import emailChangeRoutes from './routes/emailChangeRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import logsRoutes from './routes/logsRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
@@ -30,6 +69,10 @@ import teamRoutes from './routes/teamRoutes';
 import tournamentRoutes from './routes/tournamentRoutes';
 import recommendationRoutes from './routes/recommendationRoutes';
 import descriptionRoutes from './routes/descriptionRoutes';
+import noticeRoutes from './routes/noticeRoutes';
+import chatbotRoutes from './routes/chatbotRoutes';
+import { createChatroomRoutes } from './routes/chatroomRoutes';
+import { startEventReminderScheduler } from './services/eventReminderScheduler';
 
 // Verify critical environment variables
 if (!process.env.OPENAI_API_KEY) {
@@ -213,6 +256,42 @@ io.on('connection', (socket) => {
     socket.join('admin_updates');
   });
 
+  // Chatroom socket handlers
+  socket.on('joinChatroom', () => {
+    console.log(`💬 Socket ${socket.id} joined chatroom`);
+    socket.join('chatroom');
+    io.to('chatroom').emit('adminJoined', {
+      socketId: socket.id,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  socket.on('leaveChatroom', () => {
+    console.log(`💬 Socket ${socket.id} left chatroom`);
+    socket.leave('chatroom');
+    io.to('chatroom').emit('adminLeft', {
+      socketId: socket.id,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  socket.on('chatMessage', (data: any) => {
+    console.log(`💬 New message in chatroom from ${data.username}`);
+    io.to('chatroom').emit('newMessage', {
+      ...data,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  socket.on('messageDeleted', (data: any) => {
+    console.log(`🗑️  Message deleted in chatroom: ${data.messageId}`);
+    io.to('chatroom').emit('messageRemoved', {
+      messageId: data.messageId,
+      deletedBy: data.deletedBy,
+      timestamp: new Date().toISOString()
+    });
+  });
+
   socket.on('disconnect', () => {
     const userId = connectedUsers.get(socket.id);
     const wasAdmin = adminConnections.has(socket.id);
@@ -319,6 +398,7 @@ app.use('/api/admin', adminRequestRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/email-change', emailChangeRoutes);
 // Public payment endpoints (initiate / verify) and admin payment management
 app.use('/api/payment', paymentRoutes);       // /initiate, /verify
 app.use('/api/admin/payments', paymentRoutes); // admin listing, preview, resend
@@ -328,6 +408,12 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 // AI Description Generator endpoints
 app.use('/api/descriptions', descriptionRoutes);
+
+app.use('/api/notices', noticeRoutes);
+
+app.use('/api/chatbot', chatbotRoutes);
+
+app.use('/api/chatroom', createChatroomRoutes(io));
 
 // Enhanced health check endpoint
 app.get('/health', (req, res) => {
@@ -387,6 +473,10 @@ server.listen(PORT, () => {
   console.log(`👑 Admin Connections: 0`);
   console.log('');
   console.log('✅ Server is ready and accepting connections');
+  
+  // Start event reminder scheduler
+  startEventReminderScheduler();
+  console.log('📧 Event reminder scheduler activated');
 });
 
 export { io, broadcastEventUpdate, broadcastUserUpdate, broadcastAdminUpdate };

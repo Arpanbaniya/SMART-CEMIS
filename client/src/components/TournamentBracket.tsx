@@ -296,29 +296,8 @@ export default function TournamentBracket({ event, isAdmin }: TournamentBracketP
     onSuccess: async () => {
       toast({
         title: 'Tournament completed',
-        description: 'Tournament has been marked as complete.'
+        description: 'Tournament has been marked as complete. Certificate email will be sent to the winner.'
       });
-      
-      // Generate and send certificate for champion
-      if (tournament && tournament.rounds.length > 0) {
-        const finalRound = tournament.rounds[tournament.rounds.length - 1];
-        const finalMatch = finalRound.matches.find(m => m.winner && !m.isBye);
-        
-        if (finalMatch && finalMatch.winner) {
-          const winnerRegistration = registrations?.find(reg => {
-            const identifier = event.isTeamEvent ? reg.teamName : reg.studentName;
-            return identifier === finalMatch.winner;
-          });
-          
-          if (winnerRegistration) {
-            await generateCertificateMutation.mutateAsync({
-              winnerName: finalMatch.winner,
-              winnerType: event.isTeamEvent ? 'team' : 'individual',
-              teamMembers: winnerRegistration.teamMembers
-            });
-          }
-        }
-      }
       
       queryClient.invalidateQueries({ queryKey: ['tournament', event.id] });
       

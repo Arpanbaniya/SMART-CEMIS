@@ -7,6 +7,7 @@ import { Event } from '../models/Event';
 import { Registration } from '../models/Registration';
 import { Team } from '../models/Team';
 import { requireAuth, requireAdmin } from '../middleware/requireAuth';
+import { sendWinnerCertificateEmail, sendFinalRoundNotificationEmail } from '../services/emailNotificationService';
 
 const router = express.Router();
 
@@ -27,7 +28,13 @@ router.get('/:eventId/tournament', requireAuth, async (req, res) => {
     if (!tournament) {
       // Initialize tournament with first round
       const registrations = await Registration.find({ eventId, status: 'registered' });
+      console.log(`📋 Tournament initialization - Found ${registrations.length} registrations`);
+      registrations.forEach((reg, idx) => {
+        console.log(`   [${idx}] ${reg.studentName}: userId=${reg.userId}`);
+      });
+      
       const participants = await getParticipants(registrations, event.isTeamEvent);
+      console.log(`📋 Extracted participants for tournament:`, participants);
       
       if (participants.length === 0) {
         // Return empty tournament structure for no participants
@@ -140,22 +147,33 @@ router.post('/:eventId/tournament/matches', requireAuth, requireAdmin, async (re
 
 // POST /:eventId/tournament/next-round - advance to next round
 router.post('/:eventId/tournament/next-round', requireAuth, requireAdmin, async (req, res) => {
+  console.log(`\n🚀 ========== NEXT ROUND ENDPOINT CALLED ==========`);
+  console.log(`   Event ID: ${req.params.eventId}`);
+  console.log(`   Timestamp: ${new Date().toISOString()}`);
+  
   try {
     const { eventId } = req.params;
 
     const tournament = await Tournament.findOne({ eventId });
+    console.log(`   Tournament found: ${tournament ? 'YES' : 'NO'}`);
+    
     if (!tournament) {
       return res.status(404).json({ message: 'Tournament not found' });
     }
 
     // Check if current round is complete
     const currentRound = tournament.rounds.find(r => r.roundNumber === tournament.currentRound);
+    console.log(`   Current round: ${tournament.currentRound}, Page found: ${currentRound ? 'YES' : 'NO'}`);
+    
     if (!currentRound) {
       return res.status(400).json({ message: 'Current round not found' });
     }
 
     // Verify all matches have winners
     const incompleteMatches = currentRound.matches.filter(m => !m.winner && !m.isBye);
+    console.log(`   Total matches in current round: ${currentRound.matches.length}`);
+    console.log(`   Incomplete matches: ${incompleteMatches.length}`);
+    
     if (incompleteMatches.length > 0) {
       return res.status(400).json({ message: 'All matches must have winners before advancing to next round' });
     }
@@ -164,11 +182,95 @@ router.post('/:eventId/tournament/next-round', requireAuth, requireAdmin, async 
     const winners = currentRound.matches
       .filter(m => m.winner)
       .map(m => m.winner!);
+    
+    console.log(`📊 TOURNAMENT STATE:`);
+    console.log(`   Winners from current round: ${winners.length}`);
+    console.log(`   Winner IDs: ${winners.join(', ')}`);
+
+    // Check if advancing to finals (2 teams/participants left)
+    if (winners.length === 2) {
+      try {
+        // Send finals advancement notification to both teams/participants
+        if ((tournament as any).isTeamEvent || (await Event.findById(eventId))?.isTeamEvent) {
+          // For team events, send to each team
+          for (const teamId of winners) {
+            await sendFinalRoundNotificationEmail(teamId, eventId);
+          }
+        } else {
+          // For individual events, send to each participant
+          for (const participantId of winners) {
+            await sendFinalRoundNotificationEmail(participantId, eventId);
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send finals advancement emails:', emailError);
+        // Don't fail the tournament progression if email fails
+      }
+    }
 
     if (winners.length <= 1) {
       // Tournament complete
+      console.log(`🏁 Tournament completion triggered. Winners count: ${winners.length}`);
       tournament.isComplete = true;
       await tournament.save();
+      
+      // Send winner certificate email
+      if (winners.length === 1) {
+        const winnerId = winners[0];
+        const isTeamEvent = (tournament as any).isTeamEvent || (await Event.findById(eventId))?.isTeamEvent;
+        
+        console.log(`📊 Tournament winner details:`);
+        console.log(`   Winner ID: ${winnerId}`);
+        console.log(`   Is Team Event: ${isTeamEvent}`);
+        console.log(`   Event ID: ${eventId}`);
+        
+        try {
+          if (isTeamEvent) {
+            // For team events: winnerId is the team name
+            console.log(`🏆 Team tournament - Winner team name: ${winnerId}`);
+            
+            // Find all registrations for this team
+            const teamRegistrations = await Registration.find({ 
+              eventId, 
+              teamName: winnerId,
+              status: 'registered'
+            });
+            
+            console.log(`   Found ${teamRegistrations.length} team members for: ${winnerId}`);
+            
+            if (teamRegistrations.length > 0) {
+              // Send certificate email to first team member (or all if needed)
+              const firstMember = teamRegistrations[0];
+              console.log(`📧 Sending team tournament certificate to: ${firstMember.studentName} (${firstMember.email})`);
+              await sendWinnerCertificateEmail(firstMember.userId, eventId, winnerId);
+              console.log(`✅ Team certificate email sent successfully to: ${firstMember.email}`);
+            } else {
+              console.error('❌ No team members found for winning team:', winnerId);
+            }
+          } else {
+            // For individual events: winnerId is the user ID directly
+            console.log(`🏆 Individual tournament - Winner user ID: ${winnerId}`);
+            
+            // Verify user exists
+            const { User } = await import('../models/User');
+            const winner = await User.findById(winnerId);
+            if (winner) {
+              console.log(`   Found winner user: ${winner.firstName} ${winner.lastName} (${winner.email})`);
+            } else {
+              console.log(`   User NOT found with ID: ${winnerId}`);
+            }
+            
+            console.log(`📧 Sending individual tournament certificate email to user: ${winnerId}`);
+            await sendWinnerCertificateEmail(winnerId, eventId);
+            console.log(`✅ Individual certificate email sent successfully`);
+          }
+        } catch (emailError) {
+          console.error('❌ Failed to send winner certificate email:');
+          console.error('   Error message:', (emailError as any)?.message);
+          console.error('   Full error:', emailError);
+          // Don't fail tournament completion if email fails
+        }
+      }
       
       // Emit real-time update
       try {
@@ -211,9 +313,14 @@ router.post('/:eventId/tournament/next-round', requireAuth, requireAdmin, async 
       console.error('Error broadcasting tournament update:', broadcastError);
     }
     
+    console.log(`✅ Sending response with tournament.isComplete: ${tournament.isComplete}`);
+    console.log(`🟢 ========== NEXT ROUND ENDPOINT COMPLETED ==========\n`);
     res.json(tournament);
   } catch (error) {
-    console.error('Error advancing to next round:', error);
+    console.error(`\n❌ ERROR in next-round endpoint:`);
+    console.error(`   Message: ${(error as any)?.message}`);
+    console.error(`   Stack: ${(error as any)?.stack}`);
+    console.log(`🔴 ========== NEXT ROUND ENDPOINT FAILED ==========\n`);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -223,13 +330,83 @@ router.post('/:eventId/tournament/complete', requireAuth, requireAdmin, async (r
   try {
     const { eventId } = req.params;
 
+    console.log(`🔧 Tournament complete endpoint called for event: ${eventId}`);
+
     const tournament = await Tournament.findOne({ eventId });
     if (!tournament) {
       return res.status(404).json({ message: 'Tournament not found' });
     }
 
+    // Get event details
+    const event = await Event.findById(eventId);
+
     tournament.isComplete = true;
     await tournament.save();
+    
+    // Determine tournament winner (last match in last round)
+    console.log(`📊 Tournament has ${tournament.rounds.length} rounds`);
+    
+    if (tournament.rounds.length > 0) {
+      const lastRound = tournament.rounds[tournament.rounds.length - 1];
+      console.log(`   Last round (${lastRound.roundNumber}) has ${lastRound.matches.length} matches`);
+      
+      if (lastRound.matches.length > 0) {
+        const finalMatch = lastRound.matches[0];
+        console.log(`   Final match winner: ${finalMatch.winner}`);
+        
+        if (finalMatch.winner) {
+          const isTeamEvent = event?.isTeamEvent || (tournament as any).isTeamEvent;
+          console.log(`   Is team event: ${isTeamEvent}`);
+          
+          try {
+            if (isTeamEvent) {
+              // For team events: winner is the team name
+              console.log(`🏆 Team tournament - Winner team name: ${finalMatch.winner}`);
+              
+              // Find all registrations for this team
+              const teamRegistrations = await Registration.find({ 
+                eventId, 
+                teamName: finalMatch.winner,
+                status: 'registered'
+              });
+              
+              console.log(`   Found ${teamRegistrations.length} team members for: ${finalMatch.winner}`);
+              
+              if (teamRegistrations.length > 0) {
+                // Send certificate email to first team member
+                const firstMember = teamRegistrations[0];
+                console.log(`📧 Sending team tournament certificate to: ${firstMember.studentName} (${firstMember.email})`);
+                await sendWinnerCertificateEmail(firstMember.userId, eventId, finalMatch.winner);
+                console.log(`✅ Team certificate email sent successfully to: ${firstMember.email}`);
+              } else {
+                console.error('❌ No team members found for winning team:', finalMatch.winner);
+              }
+            } else {
+              // For individual events: winner is the user ID directly
+              console.log(`🏆 Individual tournament - Winner user ID: ${finalMatch.winner}`);
+              
+              // Verify user exists
+              const { User } = await import('../models/User');
+              const winner = await User.findById(finalMatch.winner);
+              if (winner) {
+                console.log(`   Found winner user: ${winner.firstName} ${winner.lastName} (${winner.email})`);
+              } else {
+                console.log(`   User NOT found with ID: ${finalMatch.winner}`);
+              }
+              
+              console.log(`📧 Sending individual tournament certificate email to user: ${finalMatch.winner}`);
+              await sendWinnerCertificateEmail(finalMatch.winner, eventId);
+              console.log(`✅ Individual certificate email sent successfully`);
+            }
+          } catch (emailError) {
+            console.error('❌ Failed to send winner certificate email:');
+            console.error('   Error message:', (emailError as any)?.message);
+            console.error('   Full error:', emailError);
+            // Don't fail tournament completion if email fails
+          }
+        }
+      }
+    }
     
     // Emit real-time update
     req.app.get('io').emit('tournamentUpdate', { eventId, tournament });
@@ -299,19 +476,48 @@ router.post('/:eventId/tournament/winner/:matchId', requireAuth, requireAdmin, a
 
 // Helper functions
 async function getParticipants(registrations: any[], isTeamEvent?: boolean): Promise<string[]> {
-  console.log('🔍 DEBUG: Getting participants from registrations:', registrations);
+  console.log('🔍 DEBUG: Getting participants from registrations');
   console.log('🔍 DEBUG: Is team event:', isTeamEvent);
+  console.log('🔍 DEBUG: Sample registration:', registrations[0]);
   
   if (isTeamEvent) {
-    // For team events, return unique team names
-    const teamNames = [...new Set(registrations.map(r => r.teamName).filter(Boolean))];
-    console.log('🔍 DEBUG: Team names extracted:', teamNames);
-    return teamNames;
+    // For team events, return unique team identifiers
+    // First try teamId, then fall back to teamName
+    const teamIdentifiers = new Set<string>();
+    
+    registrations.forEach(reg => {
+      // Try teamId first (if Team documents exist with IDs), then teamName
+      const teamId = reg.teamId || reg.teamName;
+      if (teamId) {
+        teamIdentifiers.add(teamId);
+        console.log(`   Team registration: ${reg.studentName} → Team: ${reg.teamName} (ID: ${teamId})`);
+      }
+    });
+    
+    const teamList = Array.from(teamIdentifiers);
+    console.log('🔍 DEBUG: Team identifiers extracted:', teamList);
+    return teamList;
   } else {
-    // For individual events, return user IDs
-    const userIds = registrations.map(r => r.userId);
-    console.log('🔍 DEBUG: User IDs extracted:', userIds);
-    return userIds;
+    // For individual events, return user IDs (never student names)
+    const userIds = registrations.map(r => {
+      // Try different possible field names for user ID
+      const userId = r.userId || r.participantId || r._id || r.id;
+      console.log(`   Registration: ${r.studentName || 'Unknown'} → ID: ${userId}`);
+      return userId;
+    });
+    
+    // Filter out any non-valid IDs (like short names)
+    const validUserIds = userIds.filter(id => 
+      id && typeof id === 'string' && id.length >= 20 // MongoDB ObjectId is 24 chars
+    );
+    
+    if (validUserIds.length !== userIds.length) {
+      console.warn(`⚠️  WARNING: ${userIds.length - validUserIds.length} registrations have invalid user IDs`);
+      console.warn('   Invalid IDs:', userIds.filter(id => !id || id.length < 20));
+    }
+    
+    console.log('🔍 DEBUG: User IDs extracted:', validUserIds);
+    return validUserIds;
   }
 }
 
@@ -375,11 +581,13 @@ function generateMatches(participants: string[], participantNameMap?: Map<string
       const displayName1 = participantNameMap?.get(participant1) || participant1;
       const displayName2 = participantNameMap?.get(participant2) || participant2;
       
-      console.log('🔍 DEBUG: Creating match between:', displayName1, 'and', displayName2);
+      console.log(`🔍 DEBUG: Creating match between:`);
+      console.log(`   ID1: ${participant1} → Display: ${displayName1}`);
+      console.log(`   ID2: ${participant2} → Display: ${displayName2}`);
       
       matches.push({
-        participant1: displayName1,
-        participant2: displayName2,
+        participant1: participant1,  // Store the actual ID, not display name
+        participant2: participant2,  // Store the actual ID, not display name
         winner: null,
         isBye: false
       });
@@ -391,9 +599,9 @@ function generateMatches(participants: string[], participantNameMap?: Map<string
       console.log('🔍 DEBUG: Creating BYE match for:', displayName);
       
       matches.push({
-        participant1: displayName,
+        participant1: participant,  // Store the actual ID
         participant2: null,
-        winner: displayName,
+        winner: participant,  // Store the actual ID
         isBye: true
       });
     }

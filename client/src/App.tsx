@@ -13,12 +13,14 @@ import LandingPage from "@/pages/landing";
 import EventsPage from "@/pages/events";
 import EventDetailPage from "@/pages/event-detail";
 import ProfilePage from "@/pages/profile";
+import VerifyEmailChangePage from "@/pages/verify-email-change";
 import FavoritesPage from "@/pages/favorites";
 import RegistrationsPage from "@/pages/registrations";
 import AdminDashboard from "@/pages/admin/index";
 import CreateEventPage from "@/pages/admin/create-event";
 import EditEventPage from "@/pages/admin/edit-event";
 import DeleteEventPage from "@/pages/admin/delete-event";
+import { ChatroomPage } from "@/pages/chatroom";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import VerifyPage from "@/pages/verify";
@@ -55,9 +57,11 @@ function AuthenticatedRouter() {
         <Route path="/admin/analytics" component={AdminDashboard} />
         <Route path="/admin/payments" component={AdminDashboard} />
         <Route path="/admin/settings" component={AdminDashboard} />
+        <Route path="/admin/chatroom" component={ChatroomPage} />
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
         <Route path="/verify" component={VerifyPage} />
+        <Route path="/verify-email-change" component={VerifyEmailChangePage} />
         <Route component={NotFound} />
       </Switch>
     </>

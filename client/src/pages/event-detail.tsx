@@ -1134,40 +1134,42 @@ export default function EventDetailPage() {
                       )}
                     </div>
                   ) : canRegisterEvent ? (
-                    <EventRegistrationModal 
-                      eventId={eventId!} 
-                      event={event!}
-                      isOpen={showRegistrationModal}
-                      onClose={() => setShowRegistrationModal(false)}
-                      onRegistrationSuccess={() => {
-                        queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "check-registration"] });
-                        queryClient.invalidateQueries({ queryKey: ["/api/events", eventId] });
-                        queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "teams"] });
-                        toast({
-                          title: "Registration Successful!",
-                          description: event.isTeamEvent 
-                            ? "You have joined a team for this event."
-                            : "You have been registered for this event.",
-                        });
-                      }}
-                    >
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        disabled={isFull || event.status === "completed" || finalIsRegistered}
-                        onClick={() => setShowRegistrationModal(true)}
-                        data-testid="button-register"
+                    <div className="space-y-3">
+                      <EventRegistrationModal 
+                        eventId={eventId!} 
+                        event={event!}
+                        isOpen={showRegistrationModal}
+                        onClose={() => setShowRegistrationModal(false)}
+                        onRegistrationSuccess={() => {
+                          queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "check-registration"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/events", eventId] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "teams"] });
+                          toast({
+                            title: "Registration Successful!",
+                            description: event.isTeamEvent 
+                              ? "You have joined a team for this event."
+                              : "You have been registered for this event.",
+                          });
+                        }}
                       >
-                        {isFull
-                          ? "Event Full"
-                          : event.status === "completed"
-                          ? "Event Ended"
-                          : finalIsRegistered
-                          ? (event.isTeamEvent && isUserInTeam ? "Already in Team" : "Already Registered")
-                          : event.isPaid
-                          ? `Register - ${formatCurrency(event.price || 0)}`
-                          : "Register Now"}
-                      </Button>
+                        <Button
+                          className="w-full"
+                          size="lg"
+                          disabled={isFull || event.status === "completed" || finalIsRegistered}
+                          onClick={() => setShowRegistrationModal(true)}
+                          data-testid="button-register"
+                        >
+                          {isFull
+                            ? "Event Full"
+                            : event.status === "completed"
+                            ? "Event Ended"
+                            : finalIsRegistered
+                            ? (event.isTeamEvent && isUserInTeam ? "Already in Team" : "Already Registered")
+                            : event.isPaid
+                            ? `Register - ${formatCurrency(event.price || 0)}`
+                            : "Register Now"}
+                        </Button>
+                      </EventRegistrationModal>
                       {event.isPaid && (
                         <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
                           <p className="text-xs text-red-700 dark:text-red-300 font-medium">
@@ -1175,7 +1177,7 @@ export default function EventDetailPage() {
                           </p>
                         </div>
                       )}
-                    </EventRegistrationModal>
+                    </div>
                   ) : (
                     <div className="text-center py-4 text-muted-foreground">
                       <p>

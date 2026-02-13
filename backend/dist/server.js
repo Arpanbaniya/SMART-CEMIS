@@ -45,7 +45,40 @@ const http_1 = require("http");
 const socket_io_1 = require("socket.io");
 const dotenv_1 = __importDefault(require("dotenv"));
 // ⚠️ CRITICAL: Load environment variables FIRST before importing anything else
+// Suppress dotenv tips and warnings for cleaner startup
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+const originalStderrWrite = process.stderr.write.bind(process.stderr);
+let suppressDotenv = true;
+const tempLog = (msg) => {
+    const msgStr = String(msg);
+    if (suppressDotenv && (msgStr.includes('[dotenv') || msgStr.includes('tip:') || msgStr.includes('prevent') || msgStr.includes('audit secrets'))) {
+        return;
+    }
+    originalLog(msg);
+};
+const tempWarn = (msg) => {
+    const msgStr = String(msg);
+    if (suppressDotenv && (msgStr.includes('[dotenv') || msgStr.includes('tip:') || msgStr.includes('prevent') || msgStr.includes('audit secrets'))) {
+        return;
+    }
+    originalWarn(msg);
+};
+process.stdout.write = function (str) {
+    const msgStr = String(str);
+    if (suppressDotenv && (msgStr.includes('[dotenv') || msgStr.includes('tip:') || msgStr.includes('audit secrets'))) {
+        return true;
+    }
+    return originalStdoutWrite(str);
+};
+console.log = tempLog;
+console.warn = tempWarn;
 dotenv_1.default.config();
+console.log = originalLog;
+console.warn = originalWarn;
+process.stdout.write = originalStdoutWrite;
+suppressDotenv = false;
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
@@ -62,6 +95,7 @@ const feedbackRoutes_1 = __importDefault(require("./routes/feedbackRoutes"));
 const favoriteRoutes_1 = __importDefault(require("./routes/favoriteRoutes"));
 const aiRoutes_1 = __importDefault(require("./routes/aiRoutes"));
 const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
+const emailChangeRoutes_1 = __importDefault(require("./routes/emailChangeRoutes"));
 const paymentRoutes_1 = __importDefault(require("./routes/paymentRoutes"));
 const logsRoutes_1 = __importDefault(require("./routes/logsRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
@@ -69,6 +103,10 @@ const teamRoutes_1 = __importDefault(require("./routes/teamRoutes"));
 const tournamentRoutes_1 = __importDefault(require("./routes/tournamentRoutes"));
 const recommendationRoutes_1 = __importDefault(require("./routes/recommendationRoutes"));
 const descriptionRoutes_1 = __importDefault(require("./routes/descriptionRoutes"));
+const noticeRoutes_1 = __importDefault(require("./routes/noticeRoutes"));
+const chatbotRoutes_1 = __importDefault(require("./routes/chatbotRoutes"));
+const chatroomRoutes_1 = require("./routes/chatroomRoutes");
+const eventReminderScheduler_1 = require("./services/eventReminderScheduler");
 // Verify critical environment variables
 if (!process.env.OPENAI_API_KEY) {
     console.warn('⚠️  WARNING: OPENAI_API_KEY is not configured. Sentiment analysis features will be limited to rating-based analysis only.');
@@ -233,6 +271,38 @@ io.on('connection', (socket) => {
         console.log(`👑 Socket ${socket.id} joined admin room (Admins: ${adminConnections.size})`);
         socket.join('admin_updates');
     });
+    // Chatroom socket handlers
+    socket.on('joinChatroom', () => {
+        console.log(`💬 Socket ${socket.id} joined chatroom`);
+        socket.join('chatroom');
+        io.to('chatroom').emit('adminJoined', {
+            socketId: socket.id,
+            timestamp: new Date().toISOString()
+        });
+    });
+    socket.on('leaveChatroom', () => {
+        console.log(`💬 Socket ${socket.id} left chatroom`);
+        socket.leave('chatroom');
+        io.to('chatroom').emit('adminLeft', {
+            socketId: socket.id,
+            timestamp: new Date().toISOString()
+        });
+    });
+    socket.on('chatMessage', (data) => {
+        console.log(`💬 New message in chatroom from ${data.username}`);
+        io.to('chatroom').emit('newMessage', {
+            ...data,
+            timestamp: new Date().toISOString()
+        });
+    });
+    socket.on('messageDeleted', (data) => {
+        console.log(`🗑️  Message deleted in chatroom: ${data.messageId}`);
+        io.to('chatroom').emit('messageRemoved', {
+            messageId: data.messageId,
+            deletedBy: data.deletedBy,
+            timestamp: new Date().toISOString()
+        });
+    });
     socket.on('disconnect', () => {
         const userId = connectedUsers.get(socket.id);
         const wasAdmin = adminConnections.has(socket.id);
@@ -324,6 +394,7 @@ app.use('/api/admin', adminRequestRoutes_1.default);
 app.use('/api/favorites', favoriteRoutes_1.default);
 app.use('/api/ai', aiRoutes_1.default);
 app.use('/api/profile', profileRoutes_1.default);
+app.use('/api/email-change', emailChangeRoutes_1.default);
 // Public payment endpoints (initiate / verify) and admin payment management
 app.use('/api/payment', paymentRoutes_1.default); // /initiate, /verify
 app.use('/api/admin/payments', paymentRoutes_1.default); // admin listing, preview, resend
@@ -333,6 +404,9 @@ app.use('/api/analytics', analyticsRoutes_1.default);
 app.use('/api/recommendations', recommendationRoutes_1.default);
 // AI Description Generator endpoints
 app.use('/api/descriptions', descriptionRoutes_1.default);
+app.use('/api/notices', noticeRoutes_1.default);
+app.use('/api/chatbot', chatbotRoutes_1.default);
+app.use('/api/chatroom', (0, chatroomRoutes_1.createChatroomRoutes)(io));
 // Enhanced health check endpoint
 app.get('/health', (req, res) => {
     const healthStatus = {
@@ -384,5 +458,8 @@ server.listen(PORT, () => {
     console.log(`👑 Admin Connections: 0`);
     console.log('');
     console.log('✅ Server is ready and accepting connections');
+    // Start event reminder scheduler
+    (0, eventReminderScheduler_1.startEventReminderScheduler)();
+    console.log('📧 Event reminder scheduler activated');
 });
 //# sourceMappingURL=server.js.map

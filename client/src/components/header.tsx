@@ -12,7 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "./theme-toggle";
-import { Bell, Calendar, LogOut, Settings, User, FileText, Heart, Users } from "lucide-react";
+import NoticeDropdown from "./NoticeDropdown";
+import { Calendar, LogOut, Settings, User, FileText, Heart, Users, MessageCircle } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -122,10 +123,7 @@ export default function Header() {
             <div className="h-9 w-9 animate-pulse rounded-full bg-muted shimmer" />
           ) : isAuthenticated ? (
             <>
-              <Button variant="ghost" size="icon" className="btn-3d hover-elevate" data-testid="button-notifications">
-                <Bell className="h-4 w-4" />
-                <div className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full pulse-glow"></div>
-              </Button>
+              <NoticeDropdown />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="relative h-9 w-9 rounded-full cursor-pointer group">
@@ -169,12 +167,20 @@ export default function Header() {
                     </>
                   )}
                   {(user?.role === 'super_admin' || user?.role === 'student_admin') && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin" className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md p-2 transition-all duration-200" data-testid="link-admin">
-                        <Settings className="h-4 w-4" />
-                        {user?.role === 'super_admin' ? 'Admin' : 'My Admin'}
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md p-2 transition-all duration-200" data-testid="link-admin">
+                          <Settings className="h-4 w-4" />
+                          {user?.role === 'super_admin' ? 'Admin' : 'My Admin'}
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/chatroom" className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md p-2 transition-all duration-200" data-testid="link-chatroom">
+                          <MessageCircle className="h-4 w-4" />
+                          Chatroom
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   {user?.role === 'user' && (
                     <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>

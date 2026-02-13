@@ -238,7 +238,7 @@ export default function RegistrationsPage() {
           {!isLoading && !error && filteredEvents.length > 0 && (
             <div className="space-y-4">
               {filteredEvents.map((event) => {
-                const registration = registrations.find(reg => reg.eventId.id === event.id);
+                const registration = registrations.find(reg => reg.eventId && reg.eventId.id === event.id);
                 return (
                   <Card key={event.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>

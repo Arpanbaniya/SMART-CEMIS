@@ -229,7 +229,10 @@ export function EventCard({ event }: EventCardProps) {
                   queryClient.invalidateQueries({ queryKey: ["/api/events", event.id] });
                 }}
               >
-                <Button className="w-full btn-3d hover-elevate">
+                <Button 
+                  className="w-full btn-3d hover-elevate"
+                  onClick={() => setShowRegistrationModal(true)}
+                >
                   <UserPlus className="h-4 w-4 mr-2" />
                   {isCheckingRegistration ? "Checking..." : "Register Now"}
                 </Button>

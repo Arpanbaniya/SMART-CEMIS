@@ -1191,27 +1191,27 @@ export default function AdminDashboard() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Total Users</span>
-                          <span className="font-bold">{engagementData.totalUsers}</span>
+                          <span className="font-bold">{engagementData?.totalUsers || 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Active Users (30d)</span>
-                          <span className="font-bold">{engagementData.activeUsers}</span>
+                          <span className="font-bold">{engagementData?.activeUsers || 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Total Feedback</span>
-                          <span className="font-bold">{engagementData.totalFeedback}</span>
+                          <span className="font-bold">{engagementData?.totalFeedback || 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Feedback Response Rate</span>
-                          <span className="font-bold">{engagementData.feedbackResponseRate.toFixed(1)}%</span>
+                          <span className="font-bold">{engagementData?.feedbackResponseRate.toFixed(1) || '0'}%</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Total Registrations</span>
-                          <span className="font-bold">{engagementData.totalRegistrations}</span>
+                          <span className="font-bold">{engagementData?.totalRegistrations || 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Avg Registrations/Event</span>
-                          <span className="font-bold">{engagementData.avgRegistrationsPerEvent}</span>
+                          <span className="text-sm text-muted-foreground">Repeat Participant Rate</span>
+                          <span className="font-bold">{engagementData?.repeatParticipantRate?.toFixed(1) || '0'}%</span>
                         </div>
                       </div>
                     </CardContent>
@@ -1299,20 +1299,24 @@ export default function AdminDashboard() {
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Average Registration Rate</span>
-                          <span className="font-bold">78%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Average Attendance Rate</span>
-                          <span className="font-bold">92%</span>
+                          <span className="text-sm text-muted-foreground">Registration Rate</span>
+                          <span className="font-bold">{engagementData?.avgRegistrationRate.toFixed(1) || '0'}%</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Feedback Response Rate</span>
-                          <span className="font-bold">45%</span>
+                          <span className="font-bold">{engagementData?.feedbackResponseRate.toFixed(1) || '0'}%</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Repeat Participant Rate</span>
-                          <span className="font-bold">34%</span>
+                          <span className="font-bold">{engagementData?.repeatParticipantRate.toFixed(1) || '0'}%</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <span className="text-sm text-muted-foreground">Total Registrations</span>
+                          <span className="font-bold">{engagementData?.totalRegistrations || 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Total Feedback</span>
+                          <span className="font-bold">{engagementData?.totalFeedback || 0}</span>
                         </div>
                       </div>
                     </CardContent>

@@ -1,0 +1,203 @@
+/* Chatroom Page Styles */
+
+.chatroom-container {
+  background: linear-gradient(135deg, #1e293b 0%, #1e3a8a 50%, #0f172a 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatroom-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: rgba(30, 41, 59, 0.8);
+  border-radius: 0.75rem;
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #1e293b;
+}
+
+.chatroom-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chatroom-messages::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.chatroom-messages::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.chatroom-messages::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.message-item {
+  padding: 1rem;
+  background-color: #334155;
+  border-radius: 0.5rem;
+  border-left: 3px solid #3b82f6;
+  transition: all 0.2s ease;
+}
+
+.message-item:hover {
+  background-color: #475569;
+  transform: translateX(4px);
+}
+
+.message-item.deleted {
+  opacity: 0.6;
+  background-color: #1e293b;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.message-username {
+  font-weight: 600;
+  color: #93c5fd;
+  font-size: 0.95rem;
+}
+
+.message-role {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.message-content {
+  color: #e2e8f0;
+  word-wrap: break-word;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.message-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.file-item {
+  position: relative;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.file-item img {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.file-item img:hover {
+  opacity: 0.9;
+}
+
+.file-item-document {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 0.375rem;
+}
+
+.file-item-icon {
+  color: #86efac;
+  flex-shrink: 0;
+}
+
+.file-item-name {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chatroom-input {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #1e293b;
+  border-radius: 0.5rem;
+}
+
+.chatroom-input input {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #334155;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.95rem;
+}
+
+.chatroom-input input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.chatroom-input input::placeholder {
+  color: #94a3b8;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #94a3b8;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #7c2d12;
+  color: #fed7aa;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.student-admin-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}

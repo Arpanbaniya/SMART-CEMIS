@@ -18,6 +18,11 @@ export interface IUser {
   verificationToken?: string; // hashed token
   verificationExpires?: Date; // expires 1 hour after creation
   lastVerificationSentAt?: Date; // for resend cooldown
+  // Email change fields
+  pendingEmail?: string; // New email waiting for verification
+  pendingEmailToken?: string; // Hashed token for verification
+  pendingEmailExpiresAt?: Date; // Expiry time for token
+  lastEmailChangeRequest?: Date; // For rate limiting
   // Student details for event registration
   semester?: number;
   rollNo?: string;
@@ -55,6 +60,11 @@ const userSchema = new Schema<IUser>({
   verificationToken: { type: String, default: undefined },
   verificationExpires: { type: Date, default: undefined },
   lastVerificationSentAt: { type: Date, default: undefined },
+  // Email change fields
+  pendingEmail: { type: String, default: undefined },
+  pendingEmailToken: { type: String, default: undefined },
+  pendingEmailExpiresAt: { type: Date, default: undefined },
+  lastEmailChangeRequest: { type: Date, default: undefined },
   // Student details for event registration
   semester: { type: Number, min: 1, max: 8 },
   rollNo: { type: String },

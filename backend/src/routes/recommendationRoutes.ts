@@ -229,7 +229,7 @@ router.get('/admin/cache', requireAuth, async (req: Request, res: Response) => {
 router.get('/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { limit = '3' } = req.query;
+    const { limit = '5' } = req.query;
 
     const limitNum = Math.min(Math.max(parseInt(limit as string), 1), 10);
 

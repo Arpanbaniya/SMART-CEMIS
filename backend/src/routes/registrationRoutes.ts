@@ -6,6 +6,7 @@ import { Event } from '../models/Event';
 import { User } from '../models/User';
 import { Team } from '../models/Team';
 import { computeEventStatus } from '../utils/eventStatus';
+import { sendRegistrationConfirmationEmail } from '../services/emailNotificationService';
 
 // Import broadcast function
 declare global {
@@ -348,6 +349,19 @@ router.post('/:eventId/register', requireAuth, async (req, res) => {
     }
 
     res.status(201).json(registration.toJSON());
+
+    // Send registration confirmation email asynchronously (don't wait for it)
+    // Note: Intentionally not awaiting - registration succeeds even if email fails
+    setImmediate(async () => {
+      try {
+        const isPaid = event.isPaid && event.price && event.price > 0;
+        console.log(`📧 Sending ${isPaid ? 'PAID' : 'FREE'} event registration confirmation email to: ${user.email}`);
+        await sendRegistrationConfirmationEmail(userId, eventId, isPaid);
+      } catch (emailError) {
+        // Silently log - registration already succeeded
+        console.error('Error sending registration confirmation email:', emailError);
+      }
+    });
   } catch (error: any) {
     console.error('Register for event error:', error);
     console.error('Error stack:', error.stack);

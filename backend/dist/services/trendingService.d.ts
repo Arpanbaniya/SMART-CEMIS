@@ -22,7 +22,7 @@ interface TrendingScore {
 /**
  * Get trending events (global, same for all users)
  *
- * @param limit - Number of events to return (default: 10)
+ * @param limit - Number of events to return (default: 5)
  * @returns Array of trending events sorted by score
  */
 export declare function getTrendingEvents(limit?: number): Promise<IEvent[]>;

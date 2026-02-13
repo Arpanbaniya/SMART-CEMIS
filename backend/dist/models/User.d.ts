@@ -14,6 +14,10 @@ export interface IUser {
     verificationToken?: string;
     verificationExpires?: Date;
     lastVerificationSentAt?: Date;
+    pendingEmail?: string;
+    pendingEmailToken?: string;
+    pendingEmailExpiresAt?: Date;
+    lastEmailChangeRequest?: Date;
     semester?: number;
     rollNo?: string;
     programme?: string;

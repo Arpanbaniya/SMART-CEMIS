@@ -4,45 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MessageCircle, X, Send, Bot, User } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { chatbotService } from "@/services/chatbotService";
 
 interface Message {
   id: string;
   content: string;
   isBot: boolean;
   timestamp: Date;
-}
-
-const FAQ_RESPONSES: Record<string, string> = {
-  "register": "To register for an event, simply click on the event card, then click the 'Register' button on the event detail page. If the event requires payment, you'll be prompted to complete the payment process.",
-  "payment": "We accept various payment methods. For paid events, you'll see the payment option during registration. All payments are processed securely.",
-  "cancel": "To cancel your registration, go to your Profile page and find the event under 'My Registrations'. Click on the event and select 'Cancel Registration'.",
-  "certificate": "Certificates are automatically generated after event completion. You can download your certificates from your Profile page under 'Past Events'.",
-  "sports": "We have various sports events including tournaments, leagues, and friendly matches. Check the Sports category to find events that interest you!",
-  "tech": "Our technology events include hackathons, workshops, seminars, and coding competitions. Browse the Technology category for upcoming events.",
-  "help": "I can help you with: registration, payments, cancellations, certificates, finding events, and general questions. Just ask!",
-  "contact": "You can reach our support team at support@eventhub.edu. We typically respond within 24 hours.",
-};
-
-function getBotResponse(message: string): string {
-  const lowerMessage = message.toLowerCase();
-  
-  for (const [keyword, response] of Object.entries(FAQ_RESPONSES)) {
-    if (lowerMessage.includes(keyword)) {
-      return response;
-    }
-  }
-  
-  if (lowerMessage.includes("hi") || lowerMessage.includes("hello") || lowerMessage.includes("hey")) {
-    return "Hello! Welcome to EventHub. How can I help you today? You can ask me about event registration, payments, certificates, or finding specific events.";
-  }
-  
-  if (lowerMessage.includes("thank")) {
-    return "You're welcome! Is there anything else I can help you with?";
-  }
-  
-  return "I'm not sure I understand. Could you try rephrasing? You can ask me about: registration, payments, cancellations, certificates, or finding events.";
+  source?: string;
 }
 
 export function Chatbot() {
@@ -50,12 +21,13 @@ export function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hi! I'm EventHub Assistant. How can I help you today?",
+      content: "Hi! I'm EventHub Assistant. How can I help you today? You can ask me about registration, events, payments, certificates, or anything else!",
       isBot: true,
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,8 +41,8 @@ export function Chatbot() {
     }
   }, [messages]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -81,16 +53,35 @@ export function Chatbot() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const response = await chatbotService.sendMessage(input);
+      
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: getBotResponse(input),
+        content: response.reply,
         isBot: true,
         timestamp: new Date(),
+        source: response.source,
       };
+      
       setMessages((prev) => [...prev, botResponse]);
-    }, 500);
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "Sorry, I couldn't process that request. Please try again or contact support@eventhub.edu",
+        isBot: true,
+        timestamp: new Date(),
+        source: 'error',
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -158,18 +149,36 @@ export function Chatbot() {
                         {message.isBot ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
                       </AvatarFallback>
                     </Avatar>
-                    <div
-                      className={cn(
-                        "rounded-2xl px-4 py-3 text-sm max-w-[80%] shadow-sm break-words",
-                        message.isBot
-                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                          : "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                    <div className="flex flex-col gap-1">
+                      <div
+                        className={cn(
+                          "rounded-2xl px-4 py-3 text-sm max-w-[80%] shadow-sm break-words whitespace-pre-wrap",
+                          message.isBot
+                            ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            : "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                        )}
+                      >
+                        {message.content}
+                      </div>
+                      {message.source && message.isBot && (
+                        <span className="text-xs text-gray-400 px-2">via {message.source}</span>
                       )}
-                    >
-                      {message.content}
                     </div>
                   </div>
                 ))}
+                {isLoading && (
+                  <div className="flex gap-3">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                        <Bot className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex items-center gap-2 px-4 py-3 text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Processing...</span>
+                      <Loader className="h-4 w-4 animate-spin text-blue-600" />
+                    </div>
+                  </div>
+                )}
             </div>
             
             {/* Input area with enhanced styling */}
@@ -185,12 +194,14 @@ export function Chatbot() {
                   placeholder="Ask me anything..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  disabled={isLoading}
                   className="flex-1 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700"
                   data-testid="input-chatbot-message"
                 />
                 <Button 
                   type="submit" 
                   size="icon" 
+                  disabled={isLoading || !input.trim()}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                   data-testid="button-chatbot-send"
                 >
@@ -204,7 +215,8 @@ export function Chatbot() {
                   <button
                     key={action}
                     onClick={() => setInput(`Tell me about ${action}`)}
-                    className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    disabled={isLoading}
+                    className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                   >
                     {action}
                   </button>

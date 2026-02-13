@@ -80,7 +80,7 @@ async function getUserSimilarity(userId: string, otherUserIds: string[]): Promis
  */
 export async function getCollaborativeRecommendations(
   userId: string,
-  limit: number = 3
+  limit: number = 5
 ): Promise<CollaborativeScore[]> {
   try {
     console.log(`[Collaborative] Generating recommendations for ${userId}`);

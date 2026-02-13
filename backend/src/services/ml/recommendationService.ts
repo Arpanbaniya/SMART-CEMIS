@@ -62,7 +62,7 @@ function pruneCache(): void {
  */
 export async function getRecommendations(
   userId: string,
-  limit: number = 3
+  limit: number = 5
 ): Promise<RecommendationResponse> {
   try {
     // Check cache

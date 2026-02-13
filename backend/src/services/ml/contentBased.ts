@@ -46,7 +46,7 @@ export interface ContentBasedMetrics {
  */
 export async function getContentBasedRecommendations(
   userId: string,
-  limit: number = 3
+  limit: number = 5
 ): Promise<ContentBasedScore[]> {
   try {
     console.log(`[ContentBased] Training for user ${userId}, limit: ${limit}`);

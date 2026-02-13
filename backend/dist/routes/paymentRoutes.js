@@ -44,6 +44,7 @@ const User_1 = require("../models/User");
 const Event_1 = require("../models/Event");
 const mail_1 = __importDefault(require("@sendgrid/mail")); // ← Use SendGrid instead of nodemailer
 const esewa_1 = require("../utils/esewa");
+const emailNotificationService_1 = require("../services/emailNotificationService");
 // Configure SendGrid
 mail_1.default.setApiKey(process.env.SENDGRID_API_KEY || '');
 const router = (0, express_1.Router)();
@@ -361,6 +362,17 @@ router.get('/esewa/success', async (req, res) => {
                     $inc: { participantCount: 1 }
                 }, { new: true });
                 console.log('✅ Event participant count incremented. New count:', updatedEvent?.participantCount, 'Event ID:', payment.eventId);
+                // Send registration confirmation email for paid event
+                setImmediate(async () => {
+                    try {
+                        console.log('📧 Sending PAID event registration confirmation email to:', payment.userId);
+                        await (0, emailNotificationService_1.sendRegistrationConfirmationEmail)(payment.userId, payment.eventId, true);
+                    }
+                    catch (emailError) {
+                        console.error('⚠️  Failed to send registration confirmation email:', emailError);
+                        // Don't fail payment if email fails
+                    }
+                });
                 // Broadcast event update to all users
                 if (typeof broadcastToAllUsers !== 'undefined' && updatedEvent) {
                     broadcastToAllUsers({

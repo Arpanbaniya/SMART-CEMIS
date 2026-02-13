@@ -32,6 +32,11 @@ const userSchema = new mongoose_1.Schema({
     verificationToken: { type: String, default: undefined },
     verificationExpires: { type: Date, default: undefined },
     lastVerificationSentAt: { type: Date, default: undefined },
+    // Email change fields
+    pendingEmail: { type: String, default: undefined },
+    pendingEmailToken: { type: String, default: undefined },
+    pendingEmailExpiresAt: { type: Date, default: undefined },
+    lastEmailChangeRequest: { type: Date, default: undefined },
     // Student details for event registration
     semester: { type: Number, min: 1, max: 8 },
     rollNo: { type: String },

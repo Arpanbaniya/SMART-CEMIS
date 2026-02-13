@@ -43,7 +43,7 @@ function pruneCache() {
  * Get recommendations for a user
  * Returns hybrid recommendations (blend of both models)
  */
-async function getRecommendations(userId, limit = 3) {
+async function getRecommendations(userId, limit = 5) {
     try {
         // Check cache
         const cached = recommendationCache.get(userId);

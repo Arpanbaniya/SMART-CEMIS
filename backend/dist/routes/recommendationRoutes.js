@@ -209,7 +209,7 @@ router.get('/admin/cache', requireAuth_1.requireAuth, async (req, res) => {
 router.get('/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-        const { limit = '3' } = req.query;
+        const { limit = '5' } = req.query;
         const limitNum = Math.min(Math.max(parseInt(limit), 1), 10);
         const recommendations = await (0, recommendationService_1.getRecommendations)(userId, limitNum);
         res.json({
