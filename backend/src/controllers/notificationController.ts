@@ -1,4 +1,4 @@
-// backend/src/controllers/notificationController.ts
+
 import { Request, Response } from 'express';
 
 declare global {
@@ -12,7 +12,6 @@ declare global {
   };
 }
 
-// Notification types
 export enum NotificationType {
   USER_SPECIFIC = 'user_specific',
   GLOBAL = 'global',
@@ -38,7 +37,6 @@ export enum NotificationPriority {
   HIGH = 'high'
 }
 
-// Notification interface
 export interface NotificationData {
   type: NotificationType;
   category: NotificationCategory;
@@ -50,22 +48,18 @@ export interface NotificationData {
   priority?: NotificationPriority;
 }
 
-// Base notification data for all notification types
 type BaseNotificationData = Omit<NotificationData, 'userId' | 'excludeUserId' | 'type'>;
 
-// Store notifications in database (for persistence)
 export const createNotification = async (notification: Omit<NotificationData, 'id'>) => {
   try {
-    // This would integrate with a Notification model in a real implementation
-    console.log('📔 Notification created:', notification);
+    console.log('Notification:', notification);
     return notification;
   } catch (error) {
-    console.error('❌ Error creating notification:', error);
+    console.error('Error creating notification:', error);
     throw error;
   }
 };
 
-// Broadcast user-specific notification (only to specific user)
 export const sendUserNotification = (userId: string, notification: BaseNotificationData) => {
   const notificationData: NotificationData = {
     ...notification,
@@ -73,16 +67,15 @@ export const sendUserNotification = (userId: string, notification: BaseNotificat
     userId
   };
   
-  console.log(`👤 Sending user-specific notification to ${userId}:`, notificationData);
+  console.log(`User notification to ${userId}:`, notificationData);
   
   if (typeof broadcastToUser !== 'undefined') {
     broadcastToUser(userId, notificationData);
   } else {
-    console.error('❌ broadcastToUser function not available');
+    console.error('broadcastToUser not available');
   }
 };
 
-// Broadcast global notification (to all users except excluded)
 export const sendGlobalNotification = (notification: BaseNotificationData & { excludeUserId?: string }) => {
   const notificationData: NotificationData = {
     ...notification,
@@ -90,34 +83,28 @@ export const sendGlobalNotification = (notification: BaseNotificationData & { ex
     excludeUserId: notification.excludeUserId
   };
   
-  console.log(`🌍 Sending global notification (excluding ${notification.excludeUserId || 'none'}):`, notificationData);
-  console.log('🔍 Available broadcast functions:', {
-    broadcastToAllUsers: typeof broadcastToAllUsers !== 'undefined',
-    broadcastToAdmins: typeof broadcastToAdmins !== 'undefined'
-  });
+  console.log(`Global notification (excluding ${notification.excludeUserId || 'none'}):`, notificationData);
   
   if (typeof broadcastToAllUsers !== 'undefined') {
     broadcastToAllUsers(notificationData);
   } else {
-    console.error('❌ broadcastToAllUsers function not available');
+    console.error('broadcastToAllUsers not available');
   }
 };
 
-// Broadcast admin-only notification (to all admins)
 export const sendAdminNotification = (notification: BaseNotificationData) => {
   const notificationData: NotificationData = {
     ...notification,
-    type: NotificationType.GLOBAL, // Admin notifications are global to admins
+    type: NotificationType.GLOBAL,
   };
   
-  console.log(`👑 Sending admin notification:`, notificationData);
+  console.log('Admin notification:', notificationData);
   
   if (typeof broadcastToAdmins !== 'undefined') {
     broadcastToAdmins(notificationData);
   }
 };
 
-// Send private notification (only to the user who performed the action)
 export const sendPrivateNotification = (userId: string, notification: BaseNotificationData) => {
   const notificationData: NotificationData = {
     ...notification,
@@ -125,18 +112,14 @@ export const sendPrivateNotification = (userId: string, notification: BaseNotifi
     userId
   };
   
-  console.log(`🔒 Sending private notification to ${userId}:`, notificationData);
+  console.log(`Private notification to ${userId}:`, notificationData);
   
   if (typeof broadcastToUser !== 'undefined') {
     broadcastToUser(userId, notificationData);
   }
 };
 
-// Helper functions for common notification types
 export const notifyEventCreated = (creatorId: string, eventData: any) => {
-  console.log('🎯 notifyEventCreated called with:', { creatorId, eventData: eventData.title });
-  
-  // Send private confirmation to creator
   sendPrivateNotification(creatorId, {
     category: NotificationCategory.EVENT_CREATED,
     title: 'Event Created Successfully',
@@ -145,8 +128,6 @@ export const notifyEventCreated = (creatorId: string, eventData: any) => {
     priority: NotificationPriority.MEDIUM
   });
   
-  // Send global notification to all other users
-  console.log('📢 About to send global notification for event creation');
   sendGlobalNotification({
     category: NotificationCategory.EVENT_CREATED,
     title: 'New Event Created',
@@ -155,8 +136,6 @@ export const notifyEventCreated = (creatorId: string, eventData: any) => {
     excludeUserId: creatorId,
     priority: NotificationPriority.MEDIUM
   });
-  
-  console.log('✅ notifyEventCreated completed');
 };
 
 export const notifyEventUpdated = (creatorId: string, eventData: any, updatedBy?: string) => {

@@ -17,9 +17,6 @@ interface EmailUser {
   lastName?: string;
 }
 
-/**
- * Helper to get user emails from registration or team list
- */
 async function getUserEmailsFromRegistrations(registrationIds: string[]): Promise<EmailUser[]> {
   const registrations = await Registration.find({ _id: { $in: registrationIds } });
   const emails: EmailUser[] = [];
@@ -38,7 +35,6 @@ async function getUserEmailsFromRegistrations(registrationIds: string[]): Promis
   return emails;
 }
 
-// ============ EVENT UPDATE NOTIFICATION ============
 export async function sendEventUpdateNotification(
   eventId: string,
   changes: Record<string, { old: any; new: any }>
@@ -150,11 +146,10 @@ export async function sendEventUpdateNotification(
       }
     }
   } catch (error) {
-    console.error('❌ Error sending event update notification:', error);
+    console.error('Error sending event update notification:', error);
   }
 }
 
-// ============ EVENT CANCELLATION NOTIFICATION ============
 export async function sendEventCancellationNotification(eventId: string): Promise<void> {
   try {
     const event = await Event.findById(eventId);

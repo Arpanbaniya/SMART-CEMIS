@@ -1,5 +1,3 @@
-// backend/src/services/eventReminderScheduler.ts
-// Scheduler for automated event reminders and feedback requests
 
 import { Event } from '../models/Event';
 import { Registration } from '../models/Registration';

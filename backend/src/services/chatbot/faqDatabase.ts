@@ -1,6 +1,4 @@
-// backend/src/services/chatbot/faqDatabase.ts
 /**
- * FAQ Database Service
  * Contains all prewritten responses for common questions
  */
 

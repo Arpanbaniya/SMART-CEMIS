@@ -1,4 +1,3 @@
-// backend/src/models/Team.ts
 import { Schema, model } from 'mongoose';
 
 export interface ITeam {

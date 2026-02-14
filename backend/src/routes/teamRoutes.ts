@@ -1,4 +1,3 @@
-// backend/src/routes/teamRoutes.ts
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Team } from '../models/Team';

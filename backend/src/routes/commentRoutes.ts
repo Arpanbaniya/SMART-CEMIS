@@ -22,8 +22,6 @@ router.get('/:eventId/comments', async (req, res) => {
       .populate('userId', 'firstName lastName email')
       .sort({ createdAt: -1 });
 
-    console.log(`Fetching ${comments.length} comments for event ${eventId}:`, comments.map(c => ({ id: c._id, content: c.content.substring(0, 50) + '...', userId: c.userId })));
-
     res.json(comments.map(c => c.toJSON()));
   } catch (error) {
     console.error('Fetch event comments error:', error);
@@ -92,9 +90,6 @@ router.post('/:eventId/comments', requireAuth, async (req, res) => {
 
     await comment.save();
     await comment.populate('userId', 'firstName lastName email');
-    
-    console.log('Comment created successfully:', comment.toJSON());
-    console.log('Total comments for event:', await Comment.countDocuments({ eventId }));
 
     res.status(201).json(comment.toJSON());
   } catch (error) {

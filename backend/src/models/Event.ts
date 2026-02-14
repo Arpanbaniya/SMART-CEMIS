@@ -1,7 +1,5 @@
-// backend/src/models/Event.ts
 import { Schema, model } from 'mongoose';
 
-// Event Categories (moved from shared schema temporarily)
 export const EVENT_CATEGORIES = [
   "sports", "technology", "cultural", "academic", "music",
   "art", "workshop", "competition", "social", "other"
@@ -44,8 +42,8 @@ const eventSchema = new Schema<IEvent>({
   category: { type: String, enum: EVENT_CATEGORIES, required: true },
   date: { type: Date, required: true },
   time: { type: String, required: true },
-  endDate: { type: Date, required: true }, // End date
-  endTime: { type: String, required: true }, // End time
+  endDate: { type: Date, required: true },
+  endTime: { type: String, required: true },
   location: { type: String, required: false },
   capacity: { type: Number, default: 100 },
   participantCount: { type: Number, default: 0 },
@@ -61,11 +59,10 @@ const eventSchema = new Schema<IEvent>({
   maxTeams: { type: Number },
   maxTeamMembers: { type: Number },
   genderFixed: { type: String, enum: ['Male', 'Female', 'Other'], default: null },
-  isCancelled: { type: Boolean, default: false }, // If event was cancelled
-  archivedAt: { type: Date, default: null }, // When the event was archived (5 days after completion)
+  isCancelled: { type: Boolean, default: false },
+  archivedAt: { type: Date, default: null },
 }, { timestamps: true });
 
-// ADD THIS: Map _id to id for frontend
 eventSchema.virtual('id').get(function () {
   return this._id.toString();
 });

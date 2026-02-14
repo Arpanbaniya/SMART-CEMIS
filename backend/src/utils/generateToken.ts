@@ -1,4 +1,3 @@
-// backend/src/utils/generateToken.ts
 import crypto from 'crypto';
 
 export interface VerificationToken {
@@ -6,10 +5,7 @@ export interface VerificationToken {
   hashed: string;
 }
 
-/**
- * Generate a secure verification token
- * Returns both raw (for email) and hashed (for database storage) versions
- */
+
 export function generateVerificationToken(): VerificationToken {
   // Generate 64-char hex token (32 bytes)
   const raw = crypto.randomBytes(32).toString('hex');

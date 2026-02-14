@@ -1,14 +1,12 @@
-// backend/src/controllers/favoriteController.ts
+
 import { Request, Response } from 'express';
 import { Favorite } from '../models/Favorite';
 import { Event } from '../models/Event';
 
-// Import broadcast function
 declare global {
   var broadcastEventUpdate: (eventId: string, data: any) => void;
 }
 
-// POST /api/favorites - Add event to favorites
 export const addToFavorites = async (req: Request, res: Response) => {
   try {
     if (!req.session.userId) {
@@ -21,13 +19,11 @@ export const addToFavorites = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Event ID is required' });
     }
 
-    // Check if event exists
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Check if already favorited
     const existingFavorite = await Favorite.findOne({
       userId: req.session.userId,
       eventId: eventId
@@ -37,7 +33,6 @@ export const addToFavorites = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Event already in favorites' });
     }
 
-    // Add to favorites
     const favorite = new Favorite({
       userId: req.session.userId,
       eventId: eventId
@@ -45,7 +40,6 @@ export const addToFavorites = async (req: Request, res: Response) => {
 
     await favorite.save();
     
-    // Broadcast real-time update to all connected clients
     if (typeof broadcastEventUpdate !== 'undefined') {
       broadcastEventUpdate(eventId, {
         type: 'favoriteAdded',
@@ -64,7 +58,6 @@ export const addToFavorites = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE /api/favorites/:eventId - Remove event from favorites
 export const removeFromFavorites = async (req: Request, res: Response) => {
   try {
     if (!req.session.userId) {
@@ -82,7 +75,6 @@ export const removeFromFavorites = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Favorite not found' });
     }
     
-    // Broadcast real-time update to all connected clients
     if (typeof broadcastEventUpdate !== 'undefined') {
       broadcastEventUpdate(eventId, {
         type: 'favoriteRemoved',
@@ -98,7 +90,6 @@ export const removeFromFavorites = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/favorites - Get user's favorite events
 export const getFavoriteEvents = async (req: Request, res: Response) => {
   try {
     if (!req.session.userId) {
@@ -108,7 +99,6 @@ export const getFavoriteEvents = async (req: Request, res: Response) => {
     const favorites = await Favorite.find({ userId: req.session.userId })
       .sort({ createdAt: -1 });
 
-    // Get event details for each favorite
     const eventIds = favorites.map(fav => fav.eventId);
     const events = await Event.find({ _id: { $in: eventIds } });
 
@@ -119,7 +109,6 @@ export const getFavoriteEvents = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/favorites/check/:eventId - Check if event is in user's favorites
 export const checkFavorite = async (req: Request, res: Response) => {
   try {
     if (!req.session.userId) {

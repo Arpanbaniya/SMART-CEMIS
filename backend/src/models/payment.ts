@@ -1,4 +1,4 @@
-// backend/src/models/Payment.ts
+
 import { Schema, model } from 'mongoose';
 
 export type PaymentStatus = 'initiated' | 'pending' | 'completed' | 'failed';

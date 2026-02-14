@@ -28,16 +28,7 @@ function constructDateTime(date: Date, time?: string): Date {
   return dateObj;
 }
 
-/**
- * Compute event status based on current time and event dates
- * Status hierarchy:
- * 1. cancelled (if isCancelled = true)
- * 2. archived (if archivedAt is set and in past)
- * 3. completed (if endDate+endTime has passed but not archived)
- * 4. live (if date+time has passed and endDate+endTime hasn't passed)
- * 5. upcoming (if date has not started)
- * 6. draft (default)
- */
+
 export function computeEventStatus(eventDates: EventDates): EventStatus {
   const now = new Date();
   const { date, time, endDate, endTime, archivedAt, isCancelled } = eventDates;
@@ -91,10 +82,7 @@ export function canEditEvent(eventStatus: EventStatus): boolean {
   return !['archived', 'completed', 'cancelled'].includes(eventStatus);
 }
 
-/**
- * Check if an event should be archived
- * (Should archive 5 days after completion)
- */
+
 export function shouldArchiveEvent(endDate: Date, endTime?: string, archivedAt?: Date | null): boolean {
   if (archivedAt) return false; // Already archived
   

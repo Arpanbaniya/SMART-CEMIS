@@ -1,7 +1,5 @@
-// backend/src/services/chatbot/eventLookupService.ts
 /**
- * Event Lookup Service
- * Handles dynamic queries about events from the database
+  Handles dynamic queries about events from the database
  */
 
 import { Event } from '../../models/Event';
@@ -10,7 +8,7 @@ import { formatDate } from '../../utils/dateFormatter';
 
 export class EventLookupService {
   /**
-   * Check if message contains event-related queries
+   Check if message contains event-related queries
    */
   public hasEventQuery(message: string): boolean {
     const eventKeywords = [
@@ -36,7 +34,7 @@ export class EventLookupService {
   }
 
   /**
-   * Extract event name or query from message
+    Extract event name or query from message
    */
   private extractEventQuery(message: string): {
     type: 'name' | 'category' | 'date' | 'generic';

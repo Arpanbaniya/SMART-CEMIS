@@ -1,4 +1,3 @@
-// backend/src/utils/sendgrid.ts
 import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid
@@ -9,11 +8,7 @@ if (process.env.SENDGRID_API_KEY) {
   console.log('📧 SendGrid not configured - email verification will be simulated.');
 }
 
-/**
- * Send verification email using SendGrid
- * Sends only the token - user copies and pastes at /verify
- * Wraps SendGrid call in try/catch; logs errors but does not throw
- */
+
 export async function sendVerificationEmail(
   email: string,
   rawToken: string
@@ -242,9 +237,7 @@ The EventHub Team
   }
 }
 
-/**
- * Send email change notification email (sent to both old and new email)
- */
+
 export async function sendEmailChangeNotification(
   recipientEmail: string,
   changedFromEmail: string,

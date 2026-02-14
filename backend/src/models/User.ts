@@ -1,4 +1,3 @@
-// backend/src/models/User.ts
 import { Schema, model } from 'mongoose';
 
 export interface IUser {
@@ -14,16 +13,15 @@ export interface IUser {
   profileImageUrl?: string | null;
   lastLogin?: Date;
   // Email verification fields
-  isVerified: boolean; // default: false
-  verificationToken?: string; // hashed token
-  verificationExpires?: Date; // expires 1 hour after creation
-  lastVerificationSentAt?: Date; // for resend cooldown
+  isVerified: boolean;
+  verificationToken?: string;
+  verificationExpires?: Date;
+  lastVerificationSentAt?: Date;
   // Email change fields
-  pendingEmail?: string; // New email waiting for verification
-  pendingEmailToken?: string; // Hashed token for verification
-  pendingEmailExpiresAt?: Date; // Expiry time for token
-  lastEmailChangeRequest?: Date; // For rate limiting
-  // Student details for event registration
+  pendingEmail?: string;
+  pendingEmailToken?: string;
+  pendingEmailExpiresAt?: Date;
+  lastEmailChangeRequest?: Date;
   semester?: number;
   rollNo?: string;
   programme?: string;
@@ -33,7 +31,7 @@ export interface IUser {
 
 const userSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
-  password: { type: String }, // optional for OAuth later
+  password: { type: String },
   firstName: { type: String, default: null },
   lastName: { type: String, default: null },
   gender: { 
@@ -55,17 +53,14 @@ const userSchema = new Schema<IUser>({
   bio: { type: String, default: undefined },
   profileImageUrl: { type: String, default: null },
   lastLogin: { type: Date },
-  // Email verification fields
   isVerified: { type: Boolean, default: false },
   verificationToken: { type: String, default: undefined },
   verificationExpires: { type: Date, default: undefined },
   lastVerificationSentAt: { type: Date, default: undefined },
-  // Email change fields
   pendingEmail: { type: String, default: undefined },
   pendingEmailToken: { type: String, default: undefined },
   pendingEmailExpiresAt: { type: Date, default: undefined },
   lastEmailChangeRequest: { type: Date, default: undefined },
-  // Student details for event registration
   semester: { type: Number, min: 1, max: 8 },
   rollNo: { type: String },
   programme: { 

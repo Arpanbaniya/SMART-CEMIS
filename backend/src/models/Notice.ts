@@ -1,4 +1,3 @@
-// backend/src/models/Notice.ts
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface INotice extends Document {

@@ -1,4 +1,3 @@
-// backend/src/routes/certificateRoutes.ts
 import express from 'express';
 import { jsPDF } from 'jspdf';
 import sgMail from '@sendgrid/mail';

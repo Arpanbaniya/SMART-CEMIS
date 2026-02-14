@@ -1,7 +1,5 @@
-// backend/src/services/chatbot/chatbotOrchestrator.ts
-/**
- * Chatbot Orchestrator Service
- * Routes user messages to appropriate handler (FAQ, Event Lookup, or OpenAI)
+/*
+ Routes user messages to appropriate handler (FAQ, Event Lookup, or OpenAI)
  */
 
 import { faqDatabase } from './faqDatabase';

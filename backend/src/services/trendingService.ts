@@ -23,20 +23,20 @@ interface TrendingScore {
   participantCount: number;
 }
 
-// Categories that are boosted (tech-related, competitive, popular)
+// Categories that are boosted
 const BOOSTED_CATEGORIES = ['technology', 'competition', 'workshop', 'academic'];
 
 /**
  * Calculate trending score for a single event
  */
 function calculateTrendingScore(event: any): number {
-  // Velocity Score: Based on participant count relative to capacity
+  
   // Higher participation rate = higher velocity
   const capacityRatio = Math.min(event.participantCount / Math.max(event.capacity, 1), 1);
   const velocityScore = capacityRatio;
 
   // Recency Score: Events created more recently score higher
-  // Decays over time (e.g., older events get lower scores)
+ 
   const now = new Date();
   const createdAt = event.createdAt || new Date();
   const ageInDays = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -53,16 +53,10 @@ function calculateTrendingScore(event: any): number {
   return score;
 }
 
-/**
- * Get trending events (global, same for all users)
- * 
- * @param limit - Number of events to return (default: 5)
- * @returns Array of trending events sorted by score
- */
 export async function getTrendingEvents(limit: number = 5): Promise<IEvent[]> {
   try {
     // Get all non-cancelled, non-archived events
-    // Filter based on timestamps instead of stored status
+   
     const now = new Date();
     const events = await Event.find({
       isCancelled: { $ne: true },
@@ -113,12 +107,7 @@ export async function getTrendingEvents(limit: number = 5): Promise<IEvent[]> {
   }
 }
 
-/**
- * Get trending events with detailed scoring info (for debugging/admin)
- * 
- * @param limit - Number of events to return (default: 10)
- * @returns Array of events with scoring breakdown
- */
+
 export async function getTrendingEventsWithScores(limit: number = 10): Promise<TrendingScore[]> {
   try {
     const now = new Date();

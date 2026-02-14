@@ -1,4 +1,3 @@
-// backend/src/models/Favorite.ts
 import { Schema, model } from 'mongoose';
 
 export interface IFavorite {

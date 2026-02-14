@@ -1,14 +1,12 @@
-// backend/src/services/chatbot/openaiChatService.ts
-/**
- * OpenAI Chat Service
- * Handles general conversational queries using OpenAI API
+/*
+ Handles general conversational queries using OpenAI API
  */
 
 import { aiService } from '../aiService';
 
 export class OpenAIChatService {
   /**
-   * Get response from OpenAI for general chat
+    Get response from OpenAI for general chat
    */
   public async getGeneralChatResponse(userMessage: string): Promise<string | null> {
     const systemPrompt = `You are EventHub Assistant, a friendly and helpful chatbot for a college event management system.
@@ -50,7 +48,7 @@ Important: Keep responses short and conversational. If it's about specific event
     } catch (apiError: any) {
       console.error('OpenAI API error:', apiError.message);
       
-      // Handle specific OpenAI errors gracefully
+      // Handle specific OpenAI errors 
       if (apiError.status === 401) {
         console.log('OpenAI API key is invalid. OpenAI service unavailable.');
         return null; // Signal to use fallback

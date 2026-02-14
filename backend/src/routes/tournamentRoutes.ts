@@ -1,5 +1,3 @@
-// backend/src/routes/tournamentRoutes.ts
-// Fixed TypeScript compilation issues
 import express from 'express';
 import { Tournament, ITournament, IMatch, ITournamentRound } from '../models/Tournament';
 import type { Document } from 'mongoose';

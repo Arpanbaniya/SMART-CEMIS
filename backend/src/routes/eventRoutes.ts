@@ -1,4 +1,3 @@
-// backend/src/routes/eventRoutes.ts - Fixed student admin event creation limits and TypeScript errors
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Event } from '../models/Event';
@@ -9,19 +8,17 @@ import { getTrendingEvents, getTrendingEventsWithScores } from '../services/tren
 import { computeEventStatus } from '../utils/eventStatus';
 import { sendEventUpdateNotification, sendEventCancellationNotification } from '../services/emailNotificationService';
 
-// Extend Express Request interface with all required properties
 interface ExtendedRequest extends Express.Request {
-  requestToUse?: any; // For storing admin request ID to be marked as used
-  params: any; // Express Request params
-  body: any; // Express Request body
-  headers: any; // Express Request headers
-  ip?: string; // Express Request IP
-  session: any; // Express Request session
+  requestToUse?: any;
+  params: any;
+  body: any;
+  headers: any;
+  ip?: string;
+  session: any;
 }
 
 const router = Router();
 
-// Middleware to check if user can modify event (super_admin or student_admin who created it)
 const canModifyEvent = async (req: ExtendedRequest, res: any, next: any) => {
   try {
     if (!req.session.userId) {
@@ -38,7 +35,6 @@ const canModifyEvent = async (req: ExtendedRequest, res: any, next: any) => {
       return next();
     }
 
-    // Student admin can only modify their own events
     if (user.role === 'student_admin') {
       const eventId = req.params.id;
       if (eventId) {
@@ -58,7 +54,6 @@ const canModifyEvent = async (req: ExtendedRequest, res: any, next: any) => {
   }
 };
 
-// POST / → Create new event (super_admin or student_admin)
 router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
   try {
     const user = await User.findById(req.session.userId);
@@ -66,7 +61,6 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Only super_admin and student_admin can create events
     if (user.role !== 'super_admin' && user.role !== 'student_admin') {
       return res.status(403).json({ 
         error: 'INSUFFICIENT_PERMISSIONS',
@@ -82,15 +76,13 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
     if (user.role === 'student_admin') {
       const { AdminRequest } = await import('../models/AdminRequest');
       
-      // Find an approved but unused request for this user
       const unusedApprovedRequest = await AdminRequest.findOne({
         userId: req.session.userId,
         status: 'approved',
         usedForEventCreation: false
-      }).sort({ reviewedAt: 1 }); // Use the oldest approved request first
+      }).sort({ reviewedAt: 1 });
       
       if (!unusedApprovedRequest) {
-        // Count existing events for better error message
         const existingEventCount = await Event.countDocuments({ createdById: req.session.userId });
         const totalApprovedRequests = await AdminRequest.countDocuments({
           userId: req.session.userId,
@@ -108,16 +100,13 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
         });
       }
       
-      // Store the request ID to mark it as used after successful event creation
       req.requestToUse = unusedApprovedRequest._id;
     }
 
-    // Validate input first
     const data = createEventSchema.parse(req.body);
 
-    // Parse dates and times from frontend
-    const eventDate = new Date(data.date); // Convert date ISO string to Date
-    const eventEndDate = new Date(data.endDate); // Convert endDate ISO string to Date
+    const eventDate = new Date(data.date);
+    const eventEndDate = new Date(data.endDate);
     
     const duplicateEvent = await Event.findOne({
       title: data.title,
@@ -139,8 +128,8 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
 
     const eventData = {
       ...data,
-      date: eventDate, // Convert date string to Date object
-      endDate: eventEndDate, // Convert endDate string to Date object
+      date: eventDate,
+      endDate: eventEndDate,
       createdById: req.session.userId,
       status: 'upcoming',
       participantCount: 0,
@@ -149,7 +138,6 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
     const newEvent = new Event(eventData);
     await newEvent.save();
     
-    // For student admins, mark the approved request as used
     if (user.role === 'student_admin' && req.requestToUse) {
       const { AdminRequest } = await import('../models/AdminRequest');
       await AdminRequest.findByIdAndUpdate(req.requestToUse, {
@@ -157,7 +145,6 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
         eventId: newEvent._id.toString()
       });
       
-      // Broadcast real-time update to the student admin about their request status change
       try {
         if (typeof (global as any).broadcastUserUpdate !== 'undefined') {
           (global as any).broadcastUserUpdate(req.session.userId!, {
@@ -207,7 +194,6 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
       console.log('Broadcast not available, continuing...');
     }
     
-    // Log the event creation
     await logEventCreation(
       req.session.userId!,
       newEvent._id.toString(),
@@ -215,7 +201,6 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
       extractRequestMetadata(req)
     );
     
-    // Add real-time log entry
     try {
       const logResponse = await fetch('http://localhost:3001/api/admin/logs', {
         method: 'POST',
@@ -240,7 +225,6 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
       console.error('Error logging event creation:', logError);
     }
     
-    // Return created event with computed status
     const json = newEvent.toJSON();
     const computedStatus = computeEventStatus({
       isCancelled: json.isCancelled || false,
@@ -267,15 +251,12 @@ router.post('/', requireAuth, async (req: ExtendedRequest, res) => {
   }
 });
 
-// GET / → Fetch all events
 router.get('/', async (req, res) => {
   try {
     const events = await Event.find().sort({ date: -1 });
     const formattedEvents = events.map(event => {
       const json = event.toJSON();
-      console.log(`📊 Event: ${json.title}, participantCount: ${json.participantCount}, type: ${typeof json.participantCount}`);
       
-      // Compute status dynamically from timestamps
       const computedStatus = computeEventStatus({
         isCancelled: json.isCancelled || false,
         archivedAt: json.archivedAt || null,
@@ -297,14 +278,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /trending - Get trending events (no auth required) - MUST come before /:id
+// GET /trending - Get trending events (no auth required)
 router.get('/trending', async (req, res) => {
   try {
-    console.log('[Trending API] Request received');
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 5;
-    console.log(`[Trending API] Fetching with limit: ${limit}`);
     const events = await getTrendingEvents(limit);
-    console.log(`[Trending API] Returning ${events.length} events`);
     res.json(events);
   } catch (error) {
     console.error('Error fetching trending events:', error);
@@ -375,7 +353,7 @@ router.get('/admin/diagnostic', requireAuth, async (req, res) => {
   }
 });
 
-// GET /:id - MUST come AFTER specific routes like /trending and /admin/*
+// GET /:id
 router.get('/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);

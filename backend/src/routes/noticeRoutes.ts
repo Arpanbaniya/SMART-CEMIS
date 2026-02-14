@@ -1,4 +1,3 @@
-// backend/src/routes/noticeRoutes.ts
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Notice } from '../models/Notice';
@@ -7,7 +6,6 @@ import { sendNoticeEmailToAllUsers } from '../services/emailNotificationService'
 
 const router = Router();
 
-// Middleware to check if user is superadmin
 async function requireSuperAdmin(req: any, res: any, next: any) {
   try {
     const user = await User.findById(req.session.userId);

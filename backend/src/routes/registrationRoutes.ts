@@ -1,4 +1,3 @@
-// backend/src/routes/registrationRoutes.ts
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Registration } from '../models/Registration';
@@ -8,35 +7,22 @@ import { Team } from '../models/Team';
 import { computeEventStatus } from '../utils/eventStatus';
 import { sendRegistrationConfirmationEmail } from '../services/emailNotificationService';
 
-// Import broadcast function
 declare global {
   var broadcastEventUpdate: (eventId: string, data: any) => void;
 }
 
 const router = Router();
 
-// Helper function to broadcast event updates (injected from server)
 let broadcastEventUpdate: (eventId: string, data: any) => void;
 
-// Export function to set broadcast reference
 export function setBroadcastFunction(fn: (eventId: string, data: any) => void) {
   broadcastEventUpdate = fn;
 }
 
-// Add debugging middleware for registrations
-router.use((req, res, next) => {
-  console.log('Registration route accessed:', req.method, req.url);
-  console.log('Session data:', req.session);
-  console.log('User ID:', req.session?.userId);
-  next();
-});
-
-// GET /:userId/registrations - Get user's registrations
 router.get('/:userId/registrations', requireAuth, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     
-    // Users can only see their own registrations
     if (req.session.userId !== userId) {
       return res.status(403).json({ error: 'Forbidden: Can only view your own registrations' });
     }
@@ -45,7 +31,6 @@ router.get('/:userId/registrations', requireAuth, async (req: Request, res: Resp
       .populate('eventId')
       .sort({ registeredAt: -1 });
 
-    // Compute event status dynamically
     const registrationsWithStatus = registrations.map(reg => {
       const regJson = reg.toJSON();
       if (regJson.eventId && typeof regJson.eventId === 'object') {
@@ -79,24 +64,11 @@ router.get('/:userId/registrations', requireAuth, async (req: Request, res: Resp
   }
 });
 
-// POST /:eventId/register - Register for an event
 router.post('/:eventId/register', requireAuth, async (req, res) => {
   try {
     const { eventId } = req.params;
     const userId = req.session.userId!;
     const { studentName, semester, rollNo, programme, email, gender, teamName } = req.body;
-
-    console.log('Registration attempt:', {
-      eventId,
-      userId,
-      studentName,
-      semester,
-      rollNo,
-      programme,
-      email,
-      gender,
-      teamName
-    });
 
     // Get user to check role
     const user = await User.findById(userId);

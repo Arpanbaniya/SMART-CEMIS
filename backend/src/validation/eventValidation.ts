@@ -1,7 +1,6 @@
-// backend/src/validation/eventValidation.ts
 import { z } from 'zod';
 
-// Event categories (synced with shared/schema.ts)
+
 const EVENT_CATEGORIES = [
   "sports", "technology", "cultural", "academic", "music",
   "art", "workshop", "competition", "social", "other"
@@ -11,7 +10,7 @@ export const createEventSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   category: z.enum(EVENT_CATEGORIES, { message: 'Invalid category' }),
-  date: z.string().min(1, 'Date is required'), // Frontend sends date string like "2024-12-31"
+  date: z.string().min(1, 'Date is required'), 
   time: z.string().min(1, 'Time is required'),
   endDate: z.string().min(1, 'End date is required'), // When event ends (date)
   endTime: z.string().min(1, 'End time is required'), // When event ends (time)

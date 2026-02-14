@@ -1,4 +1,3 @@
-// backend/src/routes/profileRoutes.ts
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { User } from '../models/User';

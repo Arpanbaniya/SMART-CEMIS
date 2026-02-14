@@ -1,4 +1,3 @@
-// backend/src/routes/authRoutes.ts
 import { Router } from 'express';
 import { User } from '../models/User';
 import { requireAuth } from '../middleware/requireAuth';
@@ -9,9 +8,6 @@ import { sendVerificationEmail } from '../utils/sendgrid';
 
 const router = Router();
 
-// ┌──────────────────────────────┐
-// │         LOGIN ROUTE          │
-// └──────────────────────────────┘
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -111,22 +107,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ┌──────────────────────────────┐
-// │       REGISTER ROUTE         │
-// └──────────────────────────────┘
 router.post('/register', async (req, res) => {
   try {
-    console.log('Registration request received:', {
-      body: req.body,
-      headers: req.headers,
-      session: req.session
-    });
-
     const { name, email, password, preference } = req.body;
 
-    // Basic validation
     if (!name || !email || !password) {
-      console.log('Validation failed - missing fields:', { name: !!name, email: !!email, password: !!password });
       return res.status(400).json({ 
         error: 'REGISTRATION_VALIDATION_FAILED',
         message: 'Registration failed: Please fill in all required fields.',
@@ -139,10 +124,8 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if email exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log('Email already registered:', email);
       return res.status(409).json({ 
         error: 'EMAIL_ALREADY_EXISTS',
         message: `Registration failed: The email address '${email}' is already registered. Please use a different email or try logging in.`,
@@ -153,15 +136,10 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Parse name
     const nameParts = name.trim().split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ') || null;
-
-    // ✅ NEW: Generate verification token
     const { raw, hashed } = generateVerificationToken();
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
@@ -181,15 +159,11 @@ router.post('/register', async (req, res) => {
     });
 
     await user.save();
-    console.log('User created successfully:', user.email);
-
-    // ✅ NEW: Send verification email (fire-and-forget, don't await)
     sendVerificationEmail(email, raw).catch((err) => {
       // Already logged in sendVerificationEmail, just catch to prevent unhandled rejection
       console.error('Failed to send verification email:', err);
     });
 
-    // ✅ UPDATED: Return success message about email verification
     return res.status(201).json({
       message: 'Account created successfully! We have sent a verification link to your email. Please check your inbox and spam folder.',
       email: email,
@@ -206,91 +180,39 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ┌──────────────────────────────┐
-// │        GET CURRENT USER      │
-// └──────────────────────────────┘
 router.get('/user', requireAuth, async (req, res) => {
   try {
-    console.log('Auth user request - session:', req.session);
-    console.log('Auth user request - userId:', req.session?.userId);
-    
-    // Check if session exists and has userId
     if (!req.session || !req.session.userId) {
-      console.log('No valid session found');
       return res.status(401).json({ message: 'No valid session found' });
     }
 
-    console.log('Attempting to find user with ID:', req.session.userId);
     const user = await User.findById(req.session.userId).select('-password');
-    console.log('User found:', user ? 'YES' : 'NO');
     
     if (!user) {
-      console.log('User not found, clearing session');
-      // Clear invalid session
       req.session.destroy(() => {});
       return res.status(401).json({ message: 'User session invalid - user not found' });
     }
     
     const userObj = user.toJSON();
-    // Ensure consistent ID format
-    const responseUser = {
+    res.json({
       ...userObj,
       id: user._id.toString()
-    };
-    
-    console.log('Returning user data for:', responseUser.email);
-    res.json(responseUser);
+    });
   } catch (error: any) {
     console.error('Auth user fetch error:', error);
-    console.error('Error stack:', error.stack);
-    
-    // Handle database connection errors gracefully
-    if (error.name === 'MongoNetworkError' || error.message?.includes('ECONNREFUSED')) {
-      return res.status(503).json({ 
-        message: 'Database connection failed. Please check if MongoDB is running.',
-        error: 'Database unavailable' 
-      });
-    }
-    
-    // Handle validation errors
-    if (error.name === 'CastError') {
-      return res.status(401).json({ message: 'Invalid session format' });
-    }
-    
-    // Handle model not found errors
-    if (error.message?.includes('Model not found')) {
-      return res.status(500).json({ 
-        message: 'Database models not loaded properly',
-        error: 'Model initialization error' 
-      });
-    }
-    
-    res.status(500).json({ 
-      message: 'Internal server error', 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
-// ┌──────────────────────────────────────┐
-// │     VERIFY EMAIL ROUTE (NEW)         │
-// └──────────────────────────────────────┘
 router.post('/verify-email', async (req, res) => {
   try {
     const { token } = req.body;
 
     if (!token) {
-      return res.status(400).json({
-        error: 'VERIFICATION_TOKEN_MISSING',
-        message: 'Verification failed: Token is required.'
-      });
+      return res.status(400).json({ error: 'Verification token is required' });
     }
 
-    // Hash the provided token to compare with DB
     const hashedToken = hashToken(token);
-
-    // Find user with matching hashed token and non-expired token
     const user = await User.findOne({
       verificationToken: hashedToken,
       verificationExpires: { $gt: new Date() } // Token not expired

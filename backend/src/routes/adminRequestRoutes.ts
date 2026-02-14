@@ -1,4 +1,3 @@
-// backend/src/routes/adminRequestRoutes.ts
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { AdminRequest } from '../models/AdminRequest';

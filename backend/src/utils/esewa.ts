@@ -1,10 +1,7 @@
 import axios from 'axios';
 import crypto from 'crypto';
 
-/**
- * eSewa Payment Integration
- * Documentation: https://developer.esewa.com.np/pages/Epay
- */
+
 
 export interface ESewaInitiateResponse {
   formUrl: string;
@@ -47,10 +44,7 @@ const getESewaConfig = (): ESewaConfig => {
   };
 };
 
-/**
- * Generate HMAC SHA256 signature for eSewa
- * Format: total_amount,transaction_uuid,product_code
- */
+
 export function generateESewaSignature(
   totalAmount: string,
   transactionUuid: string,

@@ -1,4 +1,3 @@
-// backend/src/routes/paymentRoutes.ts
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { Payment } from '../models/payment';
@@ -12,12 +11,10 @@ import { sendRegistrationConfirmationEmail } from '../services/emailNotification
 // Configure SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
-// Declare broadcast function (set by server.ts)
 declare var broadcastToAllUsers: (data: any) => void;
 
 const router = Router();
 
-// Middleware to check if user is super_admin or student_admin
 const requireAdmin = (req: any, res: any, next: any) => {
   if (req.session.userId) {
     User.findById(req.session.userId)
@@ -36,7 +33,6 @@ const requireAdmin = (req: any, res: any, next: any) => {
   }
 };
 
-// Middleware to check if user is super_admin only
 const requireSuperAdmin = (req: any, res: any, next: any) => {
   if (req.session.userId) {
     User.findById(req.session.userId)
@@ -55,16 +51,10 @@ const requireSuperAdmin = (req: any, res: any, next: any) => {
   }
 };
 
-// USER-FACING ROUTES (mounted under /api/payment)
-
-// ADMIN ROUTES (mounted under /api/admin/payments)
-
-// GET / - List all payments (Super Admin only)
 router.get('/', requireAuth, requireSuperAdmin, async (req, res) => {
   try {
     const payments = await Payment.find().sort({ createdAt: -1 });
     
-    // Fetch user and event details for each payment
     const enrichedPayments = await Promise.all(
       payments.map(async (payment) => {
         const user = await User.findById(payment.userId, 'email firstName lastName');

@@ -1,4 +1,3 @@
-// backend/src/models/AdminRequest.ts
 import { Schema, model } from 'mongoose';
 
 export interface IAdminRequest {

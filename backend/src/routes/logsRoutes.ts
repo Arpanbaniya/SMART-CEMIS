@@ -1,4 +1,3 @@
-// backend/src/routes/logsRoutes.ts
 import { Router } from 'express';
 import { User } from '../models/User';
 import { AdminLog } from '../models/AdminLog';

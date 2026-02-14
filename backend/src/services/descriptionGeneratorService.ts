@@ -1,4 +1,3 @@
-// backend/src/services/descriptionGeneratorService.ts
 import OpenAI from 'openai';
 
 interface DescriptionGenerationRequest {

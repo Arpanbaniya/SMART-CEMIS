@@ -1,8 +1,6 @@
-// backend/src/services/aiService.ts
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 
-// Ensure dotenv is loaded
 dotenv.config();
 
 interface AICompletionRequest {
@@ -28,20 +26,16 @@ class AIService {
   private openai: OpenAI | null = null;
 
   constructor() {
-    // Initialize OpenAI if API key is available
     if (process.env.OPENAI_API_KEY) {
       this.openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
       });
-      console.log('✅ OpenAI service initialized successfully');
+      console.log('OpenAI service initialized');
     } else {
-      console.warn('⚠️ OpenAI API key not found. AI features will use fallback logic.');
+      console.warn('OpenAI API key not found - using fallback logic');
     }
   }
 
-  /**
-   * Generate AI completion for scheduling suggestions
-   */
   async generateCompletion(request: AICompletionRequest): Promise<string | null> {
     try {
       if (!this.openai) {
@@ -63,13 +57,9 @@ class AIService {
     }
   }
 
-  /**
-   * Fallback response when AI service is unavailable
-   */
   private getFallbackResponse(request: AICompletionRequest): string {
     const userMessage = request.messages[request.messages.length - 1]?.content || '';
     
-    // Extract basic information for scheduling fallback
     if (userMessage.includes('schedule') || userMessage.includes('time')) {
       return JSON.stringify({
         date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -100,16 +90,10 @@ class AIService {
     return 'AI service temporarily unavailable. Please try again later.';
   }
 
-  /**
-   * Check if AI service is available
-   */
   isAvailable(): boolean {
     return this.openai !== null;
   }
 
-  /**
-   * Get service status
-   */
   getStatus(): {
     available: boolean;
     model?: string;

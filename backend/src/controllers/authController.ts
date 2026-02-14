@@ -1,4 +1,4 @@
-// backend/src/controllers/authController.ts
+
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User';
@@ -12,14 +12,11 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Basic validation
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Check for super admin
     if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD) {
-      // Ensure super admin exists in DB
       let user = await User.findOne({ email: SUPER_ADMIN_EMAIL });
       if (!user) {
         const hashedPassword = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 12);
@@ -34,13 +31,12 @@ export const login = async (req: Request, res: Response) => {
         await user.save();
       }
 
-      // Set session
       req.session.userId = user._id.toString();
       const userObj = user.toJSON();
       return res.json({ user: { ...userObj, id: user._id.toString() } });
     }
 
-    // Normal user login will go here later
+    // TODO: implement normal user login
     res.status(401).json({ error: 'Invalid credentials' });
   } catch (error) {
     console.error('Login error:', error);
